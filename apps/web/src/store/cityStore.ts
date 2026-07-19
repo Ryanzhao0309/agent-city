@@ -1305,6 +1305,9 @@ export const useCityStore = create<CityState>((set, get) => ({
     const legacyScale = layout.grid.cols < DEFAULT_GRID.cols ? 2 : 1;
     const secrets = await listSecrets();
     const agentConfigs = await listAgentConfigs();
+    const legacyBrainIds = new Set(Object.entries(agentConfigs)
+      .filter(([, config]) => !("modelProfileId" in (config.brain ?? {})))
+      .map(([characterId]) => characterId));
     const customCharacters = layout.customCharacters ?? [];
     const layoutSchemes = normalizeLayoutSchemes(layout.layoutSchemes);
     const activeLayoutSchemeId = layout.activeLayoutSchemeId ?? null;
@@ -1388,7 +1391,7 @@ export const useCityStore = create<CityState>((set, get) => ({
     });
     const currentConfigs = get().characterConfigs;
     Object.entries(currentConfigs).forEach(([characterId, config]) => {
-      if (!agentConfigs[characterId] || reconciledConfigs.changedCharacterIds.includes(characterId)) {
+      if (!agentConfigs[characterId] || legacyBrainIds.has(characterId) || reconciledConfigs.changedCharacterIds.includes(characterId)) {
         persistAgentConfig(characterId, config);
       }
     });

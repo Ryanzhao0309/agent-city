@@ -2,77 +2,11 @@ import { useEffect, useState, type CSSProperties, type ReactNode } from "react";
 import { createDefaultCharacterConfig, getCharacterById } from "../data/npcCatalog";
 import { useCityStore } from "../store/cityStore";
 import { getCharacterDisplayName } from "../utils/agentStatus";
-import type { CharacterCoreFiles, ModelProviderType } from "../types";
-import { openExternalUrl, selectWorkingDirectory } from "../services/desktopService";
-import {
-  disconnectGoogle,
-  getGoogleStatus,
-  startGoogleOAuth,
-  type GoogleConnectionStatus,
-} from "../services/agentRunService";
+import type { CharacterCoreFiles, ModelProfile } from "../types";
+import { selectWorkingDirectory } from "../services/desktopService";
 import { SkillIcon } from "./SkillIcon";
 import { listAgentKnowledgeDocuments, type KnowledgeDocument } from "../services/knowledgeLibraryService";
-
-const providerOptions: { value: ModelProviderType; label: string }[] = [
-  { value: "openai-compatible", label: "OpenAI Compatible" },
-  { value: "gemini", label: "Gemini" },
-  { value: "deepseek", label: "DeepSeek" },
-  { value: "kimi", label: "Kimi" },
-  { value: "doubao", label: "豆包" },
-  { value: "qwen", label: "通义千问" },
-  { value: "local", label: "Local" },
-  { value: "custom", label: "Custom" },
-];
-
-const providerCatalog: Record<
-  ModelProviderType,
-  {
-    baseUrl: string;
-    apiKeyRef: string;
-    models: string[];
-  }
-> = {
-  deepseek: {
-    baseUrl: "https://api.deepseek.com",
-    apiKeyRef: "DEEPSEEK_API_KEY",
-    models: ["deepseek-chat", "deepseek-reasoner"],
-  },
-  gemini: {
-    baseUrl: "https://generativelanguage.googleapis.com/v1beta/openai",
-    apiKeyRef: "GEMINI_API_KEY",
-    models: ["gemini-3.5-flash", "gemini-3.5-pro", "gemini-2.5-flash"],
-  },
-  kimi: {
-    baseUrl: "https://api.moonshot.cn/v1",
-    apiKeyRef: "KIMI_API_KEY",
-    models: ["kimi-k2-0711-preview", "moonshot-v1-8k", "moonshot-v1-32k", "moonshot-v1-128k"],
-  },
-  doubao: {
-    baseUrl: "https://ark.cn-beijing.volces.com/api/v3",
-    apiKeyRef: "DOUBAO_API_KEY",
-    models: ["doubao-seed-1-6-250615", "doubao-seed-1-6-thinking-250615", "doubao-1-5-pro-32k-250115"],
-  },
-  qwen: {
-    baseUrl: "https://dashscope.aliyuncs.com/compatible-mode/v1",
-    apiKeyRef: "QWEN_API_KEY",
-    models: ["qwen-plus", "qwen-turbo", "qwen-max", "qwen3-max"],
-  },
-  "openai-compatible": {
-    baseUrl: "https://api.openai.com/v1",
-    apiKeyRef: "OPENAI_API_KEY",
-    models: ["gpt-5", "gpt-5-mini", "gpt-5-nano"],
-  },
-  local: {
-    baseUrl: "http://localhost:11434/v1",
-    apiKeyRef: "",
-    models: ["llama3.1", "qwen2.5", "mistral"],
-  },
-  custom: {
-    baseUrl: "",
-    apiKeyRef: "OPENAI_API_KEY",
-    models: [],
-  },
-};
+import { listModelProfiles } from "../services/modelProfileService";
 
 const coreFileLabels: { key: keyof CharacterCoreFiles; label: string; rows: number }[] = [
   { key: "user", label: "user.md", rows: 4 },
@@ -93,15 +27,10 @@ export function CharacterConfigModal() {
   const updateCharacterCoreFile = useCityStore((s) => s.updateCharacterCoreFile);
   const updateCharacterSkillEnabled = useCityStore((s) => s.updateCharacterSkillEnabled);
   const resetCharacterConfig = useCityStore((s) => s.resetCharacterConfig);
+  const openSettings = useCityStore((s) => s.openSettings);
   const [permissionStatus, setPermissionStatus] = useState("");
-  const [googleStatus, setGoogleStatus] = useState<GoogleConnectionStatus | null>(null);
   const [knowledgeDocuments, setKnowledgeDocuments] = useState<KnowledgeDocument[]>([]);
-
-  useEffect(() => {
-    let active = true;
-    getGoogleStatus().then((status) => { if (active) setGoogleStatus(status); }).catch(() => undefined);
-    return () => { active = false; };
-  }, []);
+  const [modelProfiles, setModelProfiles] = useState<ModelProfile[]>([]);
 
   useEffect(() => {
     let active = true;
@@ -115,6 +44,11 @@ export function CharacterConfigModal() {
     return () => { active = false; };
   }, [characterId]);
 
+  useEffect(() => {
+    if (!characterId) return;
+    void listModelProfiles().then((result) => setModelProfiles(result.profiles)).catch(() => setModelProfiles([]));
+  }, [characterId]);
+
   if (!characterId) return null;
 
   const character = getCharacterById(characterId, customCharacters);
@@ -123,20 +57,7 @@ export function CharacterConfigModal() {
 
   const config = configs[characterId] ?? createDefaultCharacterConfig(activeCharacter);
   const displayName = getCharacterDisplayName(activeCharacter, config);
-  const providerConfig = providerCatalog[config.brain.provider];
-  const modelOptions = providerConfig.models;
-  const showCustomConnection =
-    config.brain.provider === "custom" || config.brain.provider === "local";
-
-  function handleProviderChange(provider: ModelProviderType) {
-    const nextProvider = providerCatalog[provider];
-    updateCharacterBrain(activeCharacter.id, {
-      provider,
-      baseUrl: nextProvider.baseUrl,
-      apiKeyRef: nextProvider.apiKeyRef,
-      model: nextProvider.models[0] ?? "",
-    });
-  }
+  const availableProfiles = modelProfiles.filter((profile) => profile.enabled && profile.validationStatus === "verified");
 
   async function chooseWorkingDirectory() {
     try {
@@ -150,21 +71,6 @@ export function CharacterConfigModal() {
     } catch (error) {
       setPermissionStatus(error instanceof Error ? error.message : "工作文件夹选择失败。");
     }
-  }
-
-  async function connectGoogle() {
-    try {
-      const url = await startGoogleOAuth(["gmail", "calendar"]);
-      await openExternalUrl(url);
-      setPermissionStatus("请在浏览器完成 Google 授权，完成后返回这里刷新状态。");
-    } catch (error) {
-      setPermissionStatus(error instanceof Error ? error.message : "Google 授权启动失败。");
-    }
-  }
-
-  async function refreshGoogle() {
-    try { setGoogleStatus(await getGoogleStatus()); }
-    catch (error) { setPermissionStatus(error instanceof Error ? error.message : "Google 状态刷新失败。"); }
   }
 
   return (
@@ -209,83 +115,30 @@ export function CharacterConfigModal() {
                   onChange={(event) => updateCharacterDisplayName(activeCharacter.id, event.target.value)}
                 />
               </Field>
-              <Field label="Provider">
+              <Field label="全局模型">
                 <select
                   style={inputStyle}
-                  value={config.brain.provider}
-                  onChange={(event) => handleProviderChange(event.target.value as ModelProviderType)}
+                  value={config.brain.modelProfileId}
+                  onChange={(event) => updateCharacterBrain(activeCharacter.id, { modelProfileId: event.target.value })}
                 >
-                  {providerOptions.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
+                  <option value="">请选择已验证模型</option>
+                  {availableProfiles.map((profile) => (
+                    <option key={profile.id} value={profile.id}>{profile.name} · {profile.model}</option>
                   ))}
                 </select>
+                <div style={rangeHintStyle}>模型连接、密钥和参数在“设置 → 模型管理”中统一维护。</div>
               </Field>
-              <Field label="Model">
-                {modelOptions.length > 0 ? (
-                  <select
-                    style={inputStyle}
-                    value={modelOptions.includes(config.brain.model) ? config.brain.model : modelOptions[0]}
-                    onChange={(event) => updateCharacterBrain(activeCharacter.id, { model: event.target.value })}
-                  >
-                    {modelOptions.map((model) => (
-                      <option key={model} value={model}>
-                        {model}
-                      </option>
-                    ))}
-                  </select>
-                ) : (
-                  <input
-                    style={inputStyle}
-                    value={config.brain.model}
-                    placeholder="model name"
-                    onChange={(event) => updateCharacterBrain(activeCharacter.id, { model: event.target.value })}
-                  />
-                )}
-              </Field>
-              <Field label="Secret">
+              <Field label="模型状态">
                 <div style={readOnlyPillStyle}>
-                  {providerConfig.apiKeyRef ? `${providerConfig.apiKeyRef} from Settings` : "No API key required"}
+                  {config.brain.modelProfileId ? "已绑定全局模型" : "尚未选择模型"}
                 </div>
-              </Field>
-              {showCustomConnection && (
-                <>
-                  <Field label="Base URL">
-                    <input
-                      style={inputStyle}
-                      value={config.brain.baseUrl}
-                      placeholder="https://your-compatible-api/v1"
-                      onChange={(event) => updateCharacterBrain(activeCharacter.id, { baseUrl: event.target.value })}
-                    />
-                  </Field>
-                  <Field label="Secret Key Name">
-                    <input
-                      style={inputStyle}
-                      value={config.brain.apiKeyRef}
-                      placeholder="OPENAI_API_KEY"
-                      onChange={(event) => updateCharacterBrain(activeCharacter.id, { apiKeyRef: event.target.value })}
-                    />
-                  </Field>
-                </>
-              )}
-              <Field label={`Creativity / Temperature: ${config.brain.temperature.toFixed(1)}`}>
-                <input
-                  style={rangeStyle}
-                  type="range"
-                  min={0}
-                  max={1.5}
-                  step={0.1}
-                  value={config.brain.temperature}
-                  onChange={(event) =>
-                    updateCharacterBrain(activeCharacter.id, {
-                      temperature: Number(event.target.value),
-                    })
-                  }
-                />
-                <div style={rangeHintStyle}>
-                  低：稳定执行；高：更发散、更有创意。城市 Agent 通常用 0.3-0.8。
-                </div>
+                <button
+                  type="button"
+                  style={{ ...inputStyle, cursor: "pointer", marginTop: 8 }}
+                  onClick={() => { closeCharacterConfig(); openSettings(); }}
+                >
+                  打开模型管理
+                </button>
               </Field>
             </div>
           </section>
@@ -327,30 +180,6 @@ export function CharacterConfigModal() {
                   <option value="write-with-approval">读写，写入需审批</option>
                 </select>
               </Field>
-              <Field label="Gmail">
-                <select
-                  style={inputStyle}
-                  value={config.permissions?.gmail ?? "none"}
-                  disabled={!googleStatus?.gmail}
-                  onChange={(event) => updateCharacterPermissions(activeCharacter.id, { gmail: event.target.value as "none" | "read" | "draft" })}
-                >
-                  <option value="none">不允许</option>
-                  <option value="read">读取与搜索</option>
-                  <option value="draft" disabled={!googleStatus?.gmailDraft}>读取与草稿，发送需审批</option>
-                </select>
-              </Field>
-              <Field label="Google Calendar">
-                <select
-                  style={inputStyle}
-                  value={config.permissions?.calendar ?? "none"}
-                  disabled={!googleStatus?.calendar}
-                  onChange={(event) => updateCharacterPermissions(activeCharacter.id, { calendar: event.target.value as "none" | "read" | "write-with-approval" })}
-                >
-                  <option value="none">不允许</option>
-                  <option value="read">只读</option>
-                  <option value="write-with-approval">读写，变更需审批</option>
-                </select>
-              </Field>
               <Field label="网页资料">
                 <select
                   style={inputStyle}
@@ -374,27 +203,6 @@ export function CharacterConfigModal() {
               </Field>
             </div>
 
-            <div style={googleConnectionStyle}>
-              <div>
-                <strong>Google 连接</strong>
-                <div style={rangeHintStyle}>
-                  {googleStatus?.connected ? `${googleStatus.email || "Google 账号"} · Gmail ${googleStatus.gmail ? (googleStatus.gmailDraft ? "读取与草稿" : "只读") : "未授权"} · Calendar ${googleStatus.calendar ? "已授权" : "未授权"}` : googleStatus?.configured ? "OAuth 已配置，尚未连接账号" : "先在 Settings 配置 Google OAuth Client ID"}
-                </div>
-              </div>
-              <div style={{ display: "flex", gap: 8 }}>
-                <button style={secondaryBtnStyle} onClick={() => void refreshGoogle()}>刷新</button>
-                {googleStatus?.connected ? (
-                  <button
-                    style={secondaryBtnStyle}
-                    onClick={() => void disconnectGoogle().then(refreshGoogle).catch((error) => setPermissionStatus(error.message))}
-                  >
-                    断开
-                  </button>
-                ) : (
-                  <button style={smallPrimaryBtnStyle} onClick={() => void connectGoogle()}>连接 Google</button>
-                )}
-              </div>
-            </div>
             {permissionStatus && <div style={permissionStatusStyle}>{permissionStatus}</div>}
           </section>
 
@@ -645,18 +453,6 @@ const permissionGridStyle: CSSProperties = {
   gap: 9,
 };
 
-const googleConnectionStyle: CSSProperties = {
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "space-between",
-  gap: 12,
-  marginTop: 10,
-  padding: 10,
-  borderRadius: 6,
-  background: "var(--ac-glass)",
-  border: "1px solid var(--ac-border)",
-};
-
 const secondaryBtnStyle: CSSProperties = {
   borderRadius: 6,
   border: "1px solid var(--ac-border)",
@@ -799,11 +595,6 @@ const readOnlyPillStyle: CSSProperties = {
   padding: "7px 8px",
   fontSize: 12,
   fontWeight: 900,
-};
-
-const rangeStyle: CSSProperties = {
-  width: "100%",
-  accentColor: "#60a5fa",
 };
 
 const rangeHintStyle: CSSProperties = {

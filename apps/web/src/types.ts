@@ -220,23 +220,49 @@ export interface DeviceIntegration {
   lastCheckedAt?: string;
 }
 
-export type ModelProviderType =
-  | "openai-compatible"
-  | "gemini"
-  | "deepseek"
-  | "kimi"
-  | "doubao"
-  | "qwen"
-  | "local"
-  | "custom";
-
 export interface AiBrainConfig {
   enabled: boolean;
-  provider: ModelProviderType;
+  modelProfileId: string;
+}
+
+export type ModelTemplate = "openai" | "gemini" | "deepseek" | "doubao" | "custom";
+export type ModelProtocol = "openai-chat" | "openai-responses";
+export type ModelValidationStatus = "unverified" | "verified" | "failed";
+
+export interface ModelProfile {
+  id: string;
+  name: string;
+  template: ModelTemplate;
+  protocol: ModelProtocol;
   baseUrl: string;
   model: string;
-  apiKeyRef: string;
-  temperature: number;
+  temperature: number | null;
+  maxTokens: number | null;
+  extraBody: Record<string, unknown>;
+  enabled: boolean;
+  isDefault: boolean;
+  validationStatus: ModelValidationStatus;
+  validatedAt: string | null;
+  validationError: string | null;
+  hasApiKey: boolean;
+  assignedAgentCount: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ModelProfileDraft {
+  name: string;
+  template: ModelTemplate;
+  protocol: ModelProtocol;
+  baseUrl: string;
+  model: string;
+  apiKey?: string;
+  legacySecretRef?: string;
+  temperature: number | null;
+  maxTokens: number | null;
+  extraBody: Record<string, unknown>;
+  enabled?: boolean;
+  isDefault?: boolean;
 }
 
 export interface CharacterCoreFiles {
@@ -252,8 +278,6 @@ export type AgentCapabilityMode = "none" | "read" | "write-with-approval";
 
 export interface AgentPermissions {
   workspace: AgentCapabilityMode;
-  gmail: "none" | "read" | "draft";
-  calendar: AgentCapabilityMode;
   web: "none" | "read";
   cityData: AgentCapabilityMode;
   cityDataReadonly?: boolean;

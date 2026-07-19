@@ -1551,13 +1551,27 @@ export const CityCanvas = forwardRef<HTMLDivElement, CityCanvasProps>(({ dragPre
                 {(!buildingsHidden || buildPreviewMode) && <svg className="building-ground-shadows" width={mapWidth} height={mapHeight} viewBox={`0 0 ${mapWidth} ${mapHeight}`} aria-hidden="true">
                   {buildings.map((building) => {
                     const size = getPlacedBuildingSize(building, buildingTypes);
+                    const footprintCenter = isoToScreen(
+                      building.x + size[0] / 2,
+                      building.y + size[1] / 2
+                    );
+                    const footprintSpan = size[0] + size[1];
                     const points = [
                       isoToScreen(building.x, building.y),
                       isoToScreen(building.x + size[0], building.y),
                       isoToScreen(building.x + size[0], building.y + size[1]),
                       isoToScreen(building.x, building.y + size[1]),
                     ].map((point) => `${point.x},${point.y}`).join(" ");
-                    return <polygon key={building.id} points={points} />;
+                    return <g key={building.id}>
+                      <polygon className="building-ground-shadow building-ground-shadow--ambient" points={points} />
+                      <ellipse
+                        className="building-ground-shadow building-ground-shadow--contact"
+                        cx={footprintCenter.x}
+                        cy={footprintCenter.y + size[1] * 3}
+                        rx={Math.max(24, footprintSpan * CELL_SIZE * 0.12)}
+                        ry={Math.max(8, footprintSpan * CELL_SIZE * 0.035)}
+                      />
+                    </g>;
                   })}
                 </svg>}
 

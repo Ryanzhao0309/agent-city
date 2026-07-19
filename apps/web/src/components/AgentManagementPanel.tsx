@@ -181,8 +181,8 @@ export function AgentManagementPanel({ onLeaveCityHall }: { onLeaveCityHall: () 
 
               <section className="agent-info-card">
                 <span className="agent-info-card__label">AI Brain</span>
-                <strong>{selectedConfig?.brain.enabled ? selectedConfig.brain.model || "已启用，待选择模型" : "未连接"}</strong>
-                <span>{selectedConfig?.brain.enabled ? selectedConfig.brain.provider : "配置后可执行真实任务"}</span>
+                <strong>{selectedConfig?.brain.enabled ? selectedConfig.brain.modelProfileId ? "已绑定全局模型" : "已启用，待选择模型" : "未连接"}</strong>
+                <span>{selectedConfig?.brain.enabled ? "模型库统一管理" : "配置后可执行真实任务"}</span>
               </section>
 
               <section className="agent-info-card">

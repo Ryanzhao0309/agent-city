@@ -6,6 +6,18 @@ import os from "node:os";
 import { fileURLToPath } from "node:url";
 import { db, deleteSecret, getLayout, listSecrets, saveLayoutToDb, saveSecret } from "./db.js";
 import {
+  createModelProfile,
+  deleteModelProfile,
+  getModelProfile,
+  getModelProfileSecret,
+  listAvailableLegacyModelSecrets,
+  listModelProfiles,
+  markModelProfileValidation,
+  updateModelProfile,
+  type ModelProfileInput,
+} from "./modelProfiles.js";
+import { validateModelConnection } from "./modelGateway.js";
+import {
   auditInstalledSkills,
   fetchSkillFromUrl,
   deleteSkillFromAgents,
@@ -73,12 +85,6 @@ import {
   validateWorkflowDraft,
 } from "./workflow.js";
 import {
-  beginGoogleOAuth,
-  completeGoogleOAuth,
-  disconnectGoogle,
-  getGoogleConnectionStatus,
-} from "./googleConnector.js";
-import {
   latestDesktopNotificationCursor,
   listDesktopNotificationEvents,
   type DesktopNotificationEvent,
@@ -142,6 +148,62 @@ app.put("/api/city", async (req, reply) => {
   }
   saveLayoutToDb(body);
   return { ok: true };
+});
+
+function modelProfileUsage(profileId: string): string[] {
+  return Object.entries(listAgentConfigs())
+    .filter(([, config]) => {
+      const brain = isRecord(config.brain) ? config.brain : {};
+      return brain.modelProfileId === profileId;
+    })
+    .map(([agentId]) => agentId);
+}
+
+app.get("/api/model-profiles", async () => ({
+  profiles: listModelProfiles().map((profile) => ({ ...profile, assignedAgentCount: modelProfileUsage(profile.id).length })),
+  legacySecretRefs: listAvailableLegacyModelSecrets(),
+}));
+
+app.post("/api/model-profiles", async (req, reply) => {
+  if (!isRecord(req.body)) return reply.code(400).send({ error: "Invalid model profile payload." });
+  try { return reply.code(201).send({ profile: createModelProfile(req.body as ModelProfileInput) }); }
+  catch (error) { return reply.code(400).send({ error: error instanceof Error ? error.message : "模型保存失败。" }); }
+});
+
+app.put("/api/model-profiles/:profileId", async (req, reply) => {
+  const profileId = (req.params as { profileId?: string }).profileId ?? "";
+  if (!isRecord(req.body)) return reply.code(400).send({ error: "Invalid model profile payload." });
+  try { return { profile: updateModelProfile(profileId, req.body as ModelProfileInput) }; }
+  catch (error) { return reply.code(400).send({ error: error instanceof Error ? error.message : "模型更新失败。" }); }
+});
+
+app.post("/api/model-profiles/:profileId/test", async (req, reply) => {
+  const profileId = (req.params as { profileId?: string }).profileId ?? "";
+  const profile = getModelProfile(profileId);
+  if (!profile) return reply.code(404).send({ error: "模型配置不存在。" });
+  const apiKey = getModelProfileSecret(profileId);
+  if (!apiKey) {
+    const failed = markModelProfileValidation(profileId, "failed", "尚未配置 API Key。");
+    return reply.code(400).send({ error: "尚未配置 API Key。", profile: failed });
+  }
+  try {
+    await validateModelConnection(profile, apiKey);
+    return { profile: markModelProfileValidation(profileId, "verified", null) };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "模型连接测试失败。";
+    const failed = markModelProfileValidation(profileId, "failed", message);
+    return reply.code(400).send({ error: message, profile: failed });
+  }
+});
+
+app.delete("/api/model-profiles/:profileId", async (req, reply) => {
+  const profileId = (req.params as { profileId?: string }).profileId ?? "";
+  const assignedAgents = modelProfileUsage(profileId);
+  if (assignedAgents.length) {
+    return reply.code(409).send({ error: `该模型仍被 ${assignedAgents.join("、")} 使用，请先解除绑定。`, assignedAgents });
+  }
+  try { deleteModelProfile(profileId); return { ok: true }; }
+  catch (error) { return reply.code(404).send({ error: error instanceof Error ? error.message : "模型删除失败。" }); }
 });
 
 app.get("/api/agents", async () => ({ agents: listAgentConfigs() }));
@@ -594,31 +656,6 @@ app.post("/api/workflow-skills/:skillId/publish", async (req, reply) => {
   } catch (error) { return reply.code(400).send({ error: error instanceof Error ? error.message : "流程发布失败。" }); }
 });
 
-app.get("/api/google/status", async () => getGoogleConnectionStatus());
-
-app.post("/api/google/oauth/start", async (req, reply) => {
-  const body = req.body;
-  const services = isRecord(body) && Array.isArray(body.services) ? body.services.filter((item): item is string => typeof item === "string") : [];
-  try { return beginGoogleOAuth(services); }
-  catch (error) { return reply.code(400).send({ error: error instanceof Error ? error.message : "Google OAuth failed." }); }
-});
-
-app.get("/api/google/oauth/callback", async (req, reply) => {
-  const query = isRecord(req.query) ? req.query : {};
-  if (typeof query.code !== "string" || typeof query.state !== "string") {
-    return reply.type("text/html; charset=utf-8").code(400).send("<h1>Google 授权失败</h1><p>缺少授权代码，可以关闭此窗口后重试。</p>");
-  }
-  try {
-    await completeGoogleOAuth(query.code, query.state);
-    return reply.type("text/html; charset=utf-8").send("<h1>Google 已连接</h1><p>可以关闭此窗口并返回 Agent City。</p><script>setTimeout(()=>window.close(),1200)</script>");
-  } catch (error) {
-    const message = error instanceof Error ? error.message : "Google OAuth failed.";
-    return reply.type("text/html; charset=utf-8").code(400).send(`<h1>Google 授权失败</h1><p>${escapeHtml(message)}</p>`);
-  }
-});
-
-app.delete("/api/google", async () => { disconnectGoogle(); return { ok: true }; });
-
 app.post("/api/skills/preview-url", async (req, reply) => {
   const body = req.body;
   if (!isRecord(body) || typeof body.url !== "string") {
@@ -851,12 +888,6 @@ function mimeTypeForFile(filePath: string): string {
     ".csv": "text/csv; charset=utf-8", ".json": "application/json; charset=utf-8", ".docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
     ".xlsx": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
   } as Record<string, string>)[path.extname(filePath).toLowerCase()] ?? "application/octet-stream";
-}
-
-function escapeHtml(value: string): string {
-  return value.replace(/[&<>"']/g, (character) => ({
-    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
-  })[character] ?? character);
 }
 
 function titleFromFile(fileName: string): string {

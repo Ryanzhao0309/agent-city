@@ -29,8 +29,6 @@ export type AgentCapabilityMode = "none" | "read" | "write-with-approval";
 
 export interface AgentPermissionsRecord {
   workspace?: AgentCapabilityMode;
-  gmail?: "none" | "read" | "draft";
-  calendar?: AgentCapabilityMode;
   web?: "none" | "read";
   cityData?: AgentCapabilityMode;
   // Legacy fields are retained while old layouts migrate.
@@ -121,6 +119,10 @@ function safeFileName(fileName: string): string {
 }
 
 function withConfigPath(agentId: string, config: AgentConfigRecord): AgentConfigRecord {
+  const legacyPermissions = config.permissions as
+    | (AgentPermissionsRecord & { gmail?: unknown; calendar?: unknown })
+    | undefined;
+  const { gmail: _legacyGmail, calendar: _legacyCalendar, ...currentPermissions } = legacyPermissions ?? {};
   const legacyDirectory = config.permissions?.directory;
   const cityData = config.permissions?.cityData ??
     (config.permissions?.cityDataReadonly || legacyDirectory === "city-data-readonly" ? "read" : "none");
@@ -129,10 +131,8 @@ function withConfigPath(agentId: string, config: AgentConfigRecord): AgentConfig
   return {
     ...config,
     permissions: {
-      ...config.permissions,
+      ...currentPermissions,
       workspace,
-      gmail: config.permissions?.gmail ?? "none",
-      calendar: config.permissions?.calendar ?? "none",
       web: config.permissions?.web ?? "none",
       cityData,
     },

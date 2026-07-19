@@ -5,12 +5,14 @@ import { LATEST_SCHEMA_VERSION, runMigrations } from "./migrations.js";
 
 test("ordered migrations create the resumable runtime schema idempotently", () => {
   const database = new DatabaseSync(":memory:");
+  database.exec("CREATE TABLE google_oauth_state (state TEXT PRIMARY KEY)");
   runMigrations(database);
   runMigrations(database);
   const version = database.prepare("SELECT MAX(version) AS version FROM schema_version").get() as { version: number };
   assert.equal(version.version, LATEST_SCHEMA_VERSION);
   const tables = new Set((database.prepare("SELECT name FROM sqlite_master WHERE type IN ('table','view')").all() as Array<{ name: string }>).map((row) => row.name));
-  for (const name of ["agent_session", "agent_message", "agent_run", "scheduled_task", "workflow_skill", "memory_record", "agent_memory_setting", "knowledge_chunk"]) assert.ok(tables.has(name), name);
+  for (const name of ["agent_session", "agent_message", "agent_run", "scheduled_task", "workflow_skill", "memory_record", "agent_memory_setting", "knowledge_chunk", "model_profile"]) assert.ok(tables.has(name), name);
+  assert.equal(tables.has("google_oauth_state"), false);
   const runColumns = new Set((database.prepare("PRAGMA table_info(agent_run)").all() as Array<{ name: string }>).map((row) => row.name));
   for (const name of ["session_id", "current_stage", "route_json", "state_json", "cancel_requested_at", "scheduled_task_id", "scheduled_for"]) assert.ok(runColumns.has(name), name);
   const sessionColumns = new Set((database.prepare("PRAGMA table_info(agent_session)").all() as Array<{ name: string }>).map((row) => row.name));

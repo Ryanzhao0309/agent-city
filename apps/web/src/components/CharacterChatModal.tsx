@@ -295,7 +295,7 @@ export function CharacterChatModal() {
   }
 
   const brainLabel = config?.brain.enabled
-    ? `${config.brain.provider}${config.brain.model ? ` / ${config.brain.model}` : ""}`
+    ? config.brain.modelProfileId ? "全局模型已连接" : "待选择模型"
     : "AI Brain 未启用";
 
   return (

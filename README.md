@@ -32,7 +32,6 @@ workspace organization, local ownership, and deliberate human approval.
 - Maintain Markdown knowledge documents and assign them to specific agents.
 - Review task history, tool calls, approvals, errors, and results.
 - Schedule recurring agent tasks and receive desktop notifications.
-- Connect Gmail and Google Calendar with user-authorized scopes.
 - Export and import city layouts.
 - Browse reviewed community themes, download their assets, and view public GitHub likes.
 - Run as a Docker-hosted web app or a macOS Tauri desktop app.
@@ -203,22 +202,6 @@ src-tauri/target/release/bundle/macos/Agent City.app
 
 Desktop build resources, binaries, caches, and bundles are generated locally
 and are not committed.
-
-## Google OAuth setup
-
-Create a Google OAuth client with application type **Desktop app**, enable the
-Gmail and Google Calendar APIs, and enter the client ID and client secret in
-Agent City settings.
-
-The local callback URL is:
-
-```text
-http://127.0.0.1:34127/api/google/oauth/callback
-```
-
-Gmail and Calendar are connected independently. Only scopes explicitly
-authorized by the user are exposed to an Agent. Public distribution may require
-Google OAuth application verification.
 
 ## Themes and community content
 

@@ -42,17 +42,14 @@ import {
   type WorkflowNode,
   type WorkflowSkill,
 } from "./workflow.js";
-import {
-  createCalendarEvent,
-  createGmailDraft,
-  deleteCalendarEvent,
-  listCalendarEvents,
-  readGmail,
-  searchGmail,
-  sendGmailDraft,
-  updateCalendarEvent,
-} from "./googleConnector.js";
 import { finishScheduledTaskOccurrence, parseScheduledTaskDraft, type ScheduledTaskDraft } from "./scheduledTaskService.js";
+import { getModelProfile, getModelProfileSecret } from "./modelProfiles.js";
+import {
+  requestModel,
+  type ModelContentPart as OpenAiContentPart,
+  type ModelMessage as OpenAiMessage,
+  type ModelToolDefinition as ToolDefinition,
+} from "./modelGateway.js";
 
 export type AgentRunStatus = "queued" | "running" | "waiting_approval" | "waiting_user" | "succeeded" | "failed" | "cancelled";
 type ToolRisk = "read" | "write" | "external" | "destructive";
@@ -95,28 +92,6 @@ interface RouteDecision {
   reason: string;
   useKnowledge: boolean;
   knowledgeQuery?: string;
-}
-
-interface OpenAiToolCall {
-  id: string;
-  type: "function";
-  function: { name: string; arguments: string };
-}
-
-type OpenAiContentPart =
-  | { type: "text"; text: string }
-  | { type: "image_url"; image_url: { url: string } };
-
-interface OpenAiMessage {
-  role: "system" | "user" | "assistant" | "tool";
-  content: string | OpenAiContentPart[] | null;
-  tool_calls?: OpenAiToolCall[];
-  tool_call_id?: string;
-}
-
-interface ToolDefinition {
-  type: "function";
-  function: { name: string; description: string; parameters: Record<string, unknown> };
 }
 
 db.exec(`
@@ -391,26 +366,18 @@ export function retryAgentRun(runId: string): AgentRunRecord {
 
 function getProvider(config: AgentConfigRecord) {
   const brain = objectValue(config.brain);
-  const provider = stringValue(brain.provider);
-  const defaults: Record<string, { baseUrl: string; model: string; apiKeyRef: string }> = {
-    deepseek: { baseUrl: "https://api.deepseek.com", model: "deepseek-chat", apiKeyRef: "DEEPSEEK_API_KEY" },
-    gemini: { baseUrl: "https://generativelanguage.googleapis.com/v1beta/openai", model: "gemini-2.5-flash", apiKeyRef: "GEMINI_API_KEY" },
-    kimi: { baseUrl: "https://api.moonshot.cn/v1", model: "kimi-k2-0711-preview", apiKeyRef: "KIMI_API_KEY" },
-    doubao: { baseUrl: "https://ark.cn-beijing.volces.com/api/v3", model: "doubao-seed-1-6-250615", apiKeyRef: "DOUBAO_API_KEY" },
-    qwen: { baseUrl: "https://dashscope.aliyuncs.com/compatible-mode/v1", model: "qwen-plus", apiKeyRef: "QWEN_API_KEY" },
-    "openai-compatible": { baseUrl: "https://api.openai.com/v1", model: "gpt-5-mini", apiKeyRef: "OPENAI_API_KEY" },
-  };
-  const fallback = defaults[provider] ?? { baseUrl: "", model: "", apiKeyRef: "" };
-  const baseUrl = stringValue(brain.baseUrl) || fallback.baseUrl;
-  const model = stringValue(brain.model) || fallback.model;
-  const apiKeyRef = stringValue(brain.apiKeyRef) || fallback.apiKeyRef;
-  const apiKey = (apiKeyRef ? getSecretValue(apiKeyRef) ?? process.env[apiKeyRef] ?? "" : provider === "local" ? "local" : "").trim();
   if (brain.enabled !== true) throw new Error("这个 Agent 的 AI Brain 尚未启用。");
-  if (!baseUrl || !model || !apiKey) throw new Error("Agent 模型连接配置不完整。");
+  const profileId = stringValue(brain.modelProfileId);
+  if (!profileId) throw new Error("这个 Agent 尚未选择全局模型。");
+  const profile = getModelProfile(profileId);
+  if (!profile) throw new Error("Agent 绑定的模型配置不存在。");
+  if (!profile.enabled || profile.validationStatus !== "verified") throw new Error("Agent 绑定的模型尚未验证或未启用。");
+  const apiKey = (getModelProfileSecret(profileId) ?? "").trim();
+  if (!apiKey) throw new Error("模型 API Key 尚未配置。");
   if (!/^[\x20-\x7E]+$/.test(apiKey)) {
-    throw new Error(`密钥 ${apiKeyRef || "API_KEY"} 包含中文、全角符号或其他非 ASCII 字符，请只粘贴 API Key 本身。`);
+    throw new Error("模型 API Key 包含中文、全角符号或其他非 ASCII 字符，请只粘贴 API Key 本身。");
   }
-  return { baseUrl: baseUrl.replace(/\/+$/, ""), model, apiKey, temperature: typeof brain.temperature === "number" ? brain.temperature : 0.7 };
+  return { profile, apiKey };
 }
 
 function buildSystemPrompt(
@@ -442,7 +409,7 @@ function buildSystemPrompt(
     `You are ${config.displayName || stringValue(request.characterName) || "an Agent City office agent"}.`,
     `Reply in ${stringValue(request.managementLanguage) || "zh-CN"}.`,
     "You are operating inside a persistent task run. Use only the tools shown to you.",
-    "Read tools may run automatically. Write, destructive, sending, and calendar mutation tools always pause for user approval.",
+    "Read tools may run automatically. Write and destructive tools always pause for user approval.",
     "Never claim an action succeeded before its tool result is returned. Call at most one mutating tool per step.",
     `Current date and time: ${currentTime} (${timezone}). Use this value for current news and date-sensitive searches.`,
     "Agent City has a real server-side scheduler managed in Task Center. It can automatically wake agents and execute one-time, daily, weekly, and monthly tasks. Never claim that the platform lacks automatic scheduling.",
@@ -519,22 +486,6 @@ function availableTools(config: AgentConfigRecord, allowedNames?: Set<string>): 
     tool("search_web", "Search the public web using a read-only search provider.", schema({ query: { type: "string" } }, ["query"])),
     tool("fetch_web_page", "Fetch a public web page read-only. Private networks are blocked.", schema({ url: { type: "string" } }, ["url"])),
   );
-  if (config.permissions?.gmail === "read" || config.permissions?.gmail === "draft") tools.push(
-    tool("search_gmail", "Search the connected Gmail mailbox.", schema({ query: { type: "string" } }, ["query"])),
-    tool("read_gmail", "Read one Gmail message.", schema({ messageId: { type: "string" } }, ["messageId"])),
-  );
-  if (config.permissions?.gmail === "draft") tools.push(
-    tool("create_gmail_draft", "Create a Gmail draft without sending it.", schema({ to: { type: "string" }, subject: { type: "string" }, body: { type: "string" } }, ["to", "subject", "body"])),
-    tool("send_gmail_draft", "Send an existing Gmail draft. Requires approval.", schema({ draftId: { type: "string" } }, ["draftId"])),
-  );
-  if (config.permissions?.calendar === "read" || config.permissions?.calendar === "write-with-approval") {
-    tools.push(tool("list_calendar_events", "List Google Calendar events in a time range.", schema({ timeMin: { type: "string" }, timeMax: { type: "string" } }, ["timeMin", "timeMax"])));
-    if (config.permissions.calendar === "write-with-approval") tools.push(
-      tool("create_calendar_event", "Create a calendar event. Requires approval.", schema({ event: { type: "object" } }, ["event"])),
-      tool("update_calendar_event", "Update a calendar event. Requires approval.", schema({ eventId: { type: "string" }, event: { type: "object" } }, ["eventId", "event"])),
-      tool("delete_calendar_event", "Delete a calendar event. Requires approval.", schema({ eventId: { type: "string" } }, ["eventId"])),
-    );
-  }
   return allowedNames ? tools.filter((item) => allowedNames.has(item.function.name)) : tools;
 }
 
@@ -544,9 +495,8 @@ export function availableToolNamesForAgent(agentId: string): Set<string> {
 }
 
 function toolRisk(name: string): ToolRisk {
-  if (["delete_working_file", "delete_private_workspace_file", "delete_calendar_event", "save_city_state"].includes(name)) return "destructive";
-  if (["send_gmail_draft"].includes(name)) return "external";
-  if (["write_working_file", "move_working_file", "write_private_workspace_file", "create_calendar_event", "update_calendar_event"].includes(name)) return "write";
+  if (["delete_working_file", "delete_private_workspace_file", "save_city_state"].includes(name)) return "destructive";
+  if (["write_working_file", "move_working_file", "write_private_workspace_file"].includes(name)) return "write";
   return "read";
 }
 
@@ -557,10 +507,6 @@ function approvalSummary(name: string, args: Record<string, unknown>): string {
     delete_working_file: `删除本地路径：${stringValue(args.path)}`,
     write_private_workspace_file: `写入 Agent 私有文件：${stringValue(args.fileName)}`,
     delete_private_workspace_file: `删除 Agent 私有文件：${stringValue(args.fileName)}`,
-    send_gmail_draft: `发送 Gmail 草稿：${stringValue(args.draftId)}`,
-    create_calendar_event: `创建日历事件：${stringValue(objectValue(args.event).summary) || "未命名事件"}`,
-    update_calendar_event: `修改日历事件：${stringValue(args.eventId)}`,
-    delete_calendar_event: `删除日历事件：${stringValue(args.eventId)}`,
     save_city_state: "修改 Agent City 城市数据",
   };
   return summaries[name] ?? `执行 ${name}`;
@@ -590,14 +536,6 @@ async function executeTool(config: AgentConfigRecord, agentId: string, name: str
     case "save_city_state": saveLayoutToDb(objectValue(args.layout)); return { saved: true };
     case "search_web": return { results: await searchWeb(stringValue(args.query), { apiKey: getSecretValue("BRAVE_SEARCH_API_KEY") ?? undefined, signal }) };
     case "fetch_web_page": return safeFetchText(stringValue(args.url), { signal });
-    case "search_gmail": return { messages: await searchGmail(stringValue(args.query), signal) };
-    case "read_gmail": return readGmail(stringValue(args.messageId), signal);
-    case "create_gmail_draft": return createGmailDraft(stringValue(args.to), stringValue(args.subject), stringValue(args.body), signal);
-    case "send_gmail_draft": return sendGmailDraft(stringValue(args.draftId), signal);
-    case "list_calendar_events": return listCalendarEvents(stringValue(args.timeMin), stringValue(args.timeMax), signal);
-    case "create_calendar_event": return createCalendarEvent(objectValue(args.event), signal);
-    case "update_calendar_event": return updateCalendarEvent(stringValue(args.eventId), objectValue(args.event), signal);
-    case "delete_calendar_event": return deleteCalendarEvent(stringValue(args.eventId), signal);
     default: throw new Error(`未知或未授权工具：${name}`);
   }
 }
@@ -642,23 +580,16 @@ async function callModel(
 ) {
   const provider = getProvider(config);
   const tools = options.tools === false ? [] : availableTools(config, options.allowedTools);
-  const request = (requestMessages: OpenAiMessage[]) => fetch(`${provider.baseUrl}/chat/completions`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${provider.apiKey}` },
-      body: JSON.stringify({
-        model: provider.model,
-        messages: requestMessages,
-        ...(tools.length ? { tools, tool_choice: "auto" } : {}),
-        temperature: provider.temperature,
-        stream: false,
-      }),
-      signal: options.signal,
-    });
-  let response = await request(messages);
-  let text = await response.text();
+  const request = (requestMessages: OpenAiMessage[]) => requestModel(
+    provider.profile, provider.apiKey, requestMessages, tools, { signal: options.signal },
+  );
+  let response;
   const hasImages = messages.some((message) => Array.isArray(message.content)
     && message.content.some((part) => part.type === "image_url"));
-  if (!response.ok && hasImages) {
+  try {
+    response = await request(messages);
+  } catch (error) {
+    if (!hasImages) throw error;
     const textOnlyMessages: OpenAiMessage[] = messages.map((message) => ({
       ...message,
       content: Array.isArray(message.content)
@@ -670,13 +601,8 @@ async function callModel(
       content: "The current model endpoint rejected image input. Be transparent that you received an image attachment but cannot inspect its pixels with this model; ask the user to switch to a vision-capable model if visual analysis is required.",
     });
     response = await request(textOnlyMessages);
-    text = await response.text();
   }
-  if (!response.ok) throw new Error(`模型接口请求失败：${response.status}`);
-  const data = JSON.parse(text) as { choices?: Array<{ message?: { content?: string | null; tool_calls?: OpenAiToolCall[] } }> };
-  const message = data.choices?.[0]?.message;
-  if (!message) throw new Error("模型没有返回可用消息。");
-  return message;
+  return response;
 }
 
 function parseModelJson(content: string | null | undefined): Record<string, unknown> {
