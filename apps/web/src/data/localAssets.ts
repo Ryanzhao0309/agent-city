@@ -166,13 +166,21 @@ export function getProjectAssetsForThemePack(packId: string): CustomSceneAsset[]
 
 export function getThemePackAssets(pack: ThemePackDefinition): CustomSceneAsset[] {
   const local = getProjectAssetsForThemePack(pack.id);
-  const remote = Object.entries(pack.buildingSkins ?? {}).map(([buildingType, url]) => ({
+  const published = (pack.assets ?? []).map((asset) => ({
+    id: `project-theme:${pack.id}:${asset.kind}:${asset.id}`,
+    kind: asset.kind,
+    name: asset.name,
+    url: asset.url,
+    source: "project" as const,
+  }));
+  const skinFallbacks = Object.entries(pack.buildingSkins ?? {}).map(([buildingType, url]) => ({
     id: `project-theme:${pack.id}:${buildingType}`,
     kind: "building" as const,
     name: `${pack.name} · ${buildingType}`,
     url,
     source: "project" as const,
   }));
+  const remote = [...published, ...skinFallbacks.filter((asset) => !published.some((item) => item.url === asset.url))];
   if (pack.remote && remote.length) return remote;
   return [...local, ...remote.filter((asset) => !local.some((item) => item.url === asset.url))];
 }

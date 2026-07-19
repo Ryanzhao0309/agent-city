@@ -19,6 +19,7 @@ interface ThemeCatalogResponse {
     sourceUrl: string;
     mapSurrounding: MapSurrounding;
     buildingSkins: Record<string, string>;
+    assets: NonNullable<ThemePackDefinition["assets"]>;
     likeIssueNumber?: number;
     likeUrl?: string;
     likeCount?: number;

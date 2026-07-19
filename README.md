@@ -235,8 +235,14 @@ The registry design separates contribution from publication:
 4. only an approved merge updates the catalog read by Agent City.
 
 The Theme Hall only downloads a package. It never changes the current city.
-Downloaded building artwork becomes available in the build-mode asset rail and
-in an individual building's appearance settings.
+Downloaded buildings, ground/road tiles, and decorations become available in
+Build Mode; building artwork also appears in an individual building's
+appearance settings.
+
+Each theme is stored as `themes/theme-id/theme.json` plus an `assets/` directory
+containing `preview.png` and conventional `buildings/`, `ground/`, and
+`decorations/` folders. See [theme package integration](docs/THEME_PACKAGES.md)
+and the registry's [complete format specification](https://github.com/Ryanzhao0309/agent-city-themes/blob/main/docs/theme-package-format.md).
 
 Each published theme has a locked GitHub showcase Issue. Agent City reads its
 public 👍 reaction count and opens the Issue when a user chooses to like the
