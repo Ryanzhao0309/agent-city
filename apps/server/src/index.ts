@@ -83,6 +83,7 @@ import {
   listDesktopNotificationEvents,
   type DesktopNotificationEvent,
 } from "./desktopNotificationService.js";
+import { getPublishedThemeCatalog } from "./themeCatalogService.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PORT = Number(process.env.PORT ?? 3000);
@@ -123,6 +124,16 @@ app.addHook("onRequest", async (req, reply) => {
 
 // --- API -------------------------------------------------------------
 app.get("/api/city", async () => getLayout());
+
+app.get("/api/themes/catalog", async (_req, reply) => {
+  try {
+    reply.header("Cache-Control", "public, max-age=300");
+    return await getPublishedThemeCatalog();
+  } catch (error) {
+    app.log.warn({ error }, "Theme catalog unavailable");
+    return reply.code(502).send({ error: "主题目录暂时不可用，请稍后重试。" });
+  }
+});
 
 app.put("/api/city", async (req, reply) => {
   const body = req.body;

@@ -1,5 +1,10 @@
 # Contributing to Agent City
 
+Application changes belong in this repository. Theme artwork and theme-pack
+metadata belong in the separate
+[agent-city-themes](https://github.com/Ryanzhao0309/agent-city-themes) repository,
+where a dedicated schema, rights declaration, and visual review process apply.
+
 Thank you for helping build Agent City.
 
 ## Before you start

@@ -1,6 +1,9 @@
-import type { CSSProperties } from "react";
+import { useEffect, useMemo, useState, type CSSProperties } from "react";
 import { BUILT_IN_THEME_PACKS, useCityStore } from "../store/cityStore";
 import { getBuildingPurpose } from "../utils/buildingPurpose";
+import { listPublishedThemePacks } from "../services/themeCatalogService";
+import { openExternalUrl } from "../services/desktopService";
+import type { ThemePackDefinition } from "../types";
 
 export function ThemeHallModal() {
   const open = useCityStore((s) => s.themeHallOpen);
@@ -10,20 +13,49 @@ export function ThemeHallModal() {
   const buildings = useCityStore((s) => s.buildings);
   const selectBuilding = useCityStore((s) => s.selectBuilding);
   const save = useCityStore((s) => s.save);
+  const [publishedPacks, setPublishedPacks] = useState<ThemePackDefinition[]>([]);
+  const [catalogStatus, setCatalogStatus] = useState<"idle" | "loading" | "ready" | "error">("idle");
+  const [catalogError, setCatalogError] = useState("");
+  const [reloadKey, setReloadKey] = useState(0);
+
+  useEffect(() => {
+    if (!open) return;
+    const controller = new AbortController();
+    setCatalogStatus("loading");
+    setCatalogError("");
+    listPublishedThemePacks(controller.signal)
+      .then((packs) => {
+        setPublishedPacks(packs);
+        setCatalogStatus("ready");
+      })
+      .catch((error) => {
+        if (controller.signal.aborted) return;
+        setCatalogStatus("error");
+        setCatalogError(error instanceof Error ? error.message : "主题目录加载失败。");
+      });
+    return () => controller.abort();
+  }, [open, reloadKey]);
+
+  const themePacks = useMemo(() => {
+    const officialIds = new Set(BUILT_IN_THEME_PACKS.map((pack) => pack.id));
+    const publishedById = new Map(publishedPacks.map((pack) => [pack.id, pack]));
+    const offers: ThemePackDefinition[] = BUILT_IN_THEME_PACKS.map((pack) => ({
+      ...pack,
+      ...publishedById.get(pack.id),
+      builtIn: true,
+    }));
+    offers.push(...publishedPacks.filter((pack) => !officialIds.has(pack.id)));
+    const offerIds = new Set(offers.map((pack) => pack.id));
+    offers.push(...installedThemePacks.filter((pack) => !offerIds.has(pack.id)));
+    return offers;
+  }, [installedThemePacks, publishedPacks]);
 
   if (!open) return null;
 
   const installedIds = new Set(installedThemePacks.map((pack) => pack.id));
-  const builtInIds = new Set(BUILT_IN_THEME_PACKS.map((pack) => pack.id));
-  const themePacks = [
-    ...BUILT_IN_THEME_PACKS,
-    ...installedThemePacks.filter((pack) => !builtInIds.has(pack.id)),
-  ];
   const themeHallBuilding = buildings.find((building) => getBuildingPurpose(building) === "theme-hall") ?? null;
 
-  function installAndSave(packId: string) {
-    const pack = BUILT_IN_THEME_PACKS.find((item) => item.id === packId);
-    if (!pack) return;
+  function installAndSave(pack: ThemePackDefinition) {
     installThemePack(pack);
     window.setTimeout(() => void save(), 0);
   }
@@ -51,10 +83,21 @@ export function ThemeHallModal() {
           </div>
         </header>
 
+        <div style={catalogBarStyle}>
+          <span>
+            {catalogStatus === "loading" ? "正在读取审核主题目录…" :
+              catalogStatus === "error" ? catalogError :
+              "这里只提供下载；请在建筑素材栏或建筑外观设置中应用。"}
+          </span>
+          <button style={refreshStyle} onClick={() => setReloadKey((value) => value + 1)} disabled={catalogStatus === "loading"}>
+            刷新目录
+          </button>
+        </div>
+
         <main style={gridStyle}>
           {themePacks.map((pack) => {
             const installed = installedIds.has(pack.id);
-            const hasStats = pack.downloadCount !== undefined || pack.likeCount !== undefined;
+            const hasStats = pack.likeCount !== undefined;
             return (
               <article key={pack.id} style={cardStyle}>
                 <div style={previewStyle}>
@@ -68,15 +111,21 @@ export function ThemeHallModal() {
                   <p style={summaryStyle}>{pack.summary}</p>
                   {hasStats && (
                     <div style={statsStyle} aria-label="主题数据">
-                      {pack.downloadCount !== undefined && (
-                        <span title="下载量">↓ {pack.downloadCount.toLocaleString("zh-CN")}</span>
-                      )}
                       {pack.likeCount !== undefined && (
-                        <span title="点赞量">♥ {pack.likeCount.toLocaleString("zh-CN")}</span>
+                        <span title="GitHub 点赞量">👍 {pack.likeCount.toLocaleString("zh-CN")}</span>
                       )}
                     </div>
                   )}
+                  {(pack.version || pack.license) && (
+                    <div style={metaStyle}>{[pack.version && `v${pack.version}`, pack.license].filter(Boolean).join(" · ")}</div>
+                  )}
                   <div style={actionsStyle}>
+                    {pack.sourceUrl && (
+                      <button style={linkBtnStyle} onClick={() => void openExternalUrl(pack.sourceUrl!)}>源码</button>
+                    )}
+                    {pack.likeUrl && (
+                      <button style={likeBtnStyle} onClick={() => void openExternalUrl(pack.likeUrl!)}>👍 点赞</button>
+                    )}
                     <button
                       style={{
                         ...secondaryBtnStyle,
@@ -84,7 +133,7 @@ export function ThemeHallModal() {
                         cursor: installed ? "default" : "pointer",
                       }}
                       disabled={installed}
-                      onClick={() => installAndSave(pack.id)}
+                      onClick={() => installAndSave(pack)}
                     >
                       {installed ? "已下载" : "下载"}
                     </button>
@@ -149,6 +198,28 @@ const headerActionsStyle: CSSProperties = {
   display: "flex",
   alignItems: "center",
   gap: 8,
+};
+
+const catalogBarStyle: CSSProperties = {
+  minHeight: 44,
+  padding: "8px 18px",
+  borderBottom: "1px solid var(--ac-border)",
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "space-between",
+  gap: 12,
+  color: "var(--ac-text-soft)",
+  fontSize: 12,
+};
+
+const refreshStyle: CSSProperties = {
+  border: "1px solid var(--ac-border)",
+  borderRadius: 6,
+  background: "var(--ac-control)",
+  color: "var(--ac-text-soft)",
+  padding: "6px 10px",
+  cursor: "pointer",
+  fontWeight: 800,
 };
 
 const editBtnStyle: CSSProperties = {
@@ -260,6 +331,12 @@ const statsStyle: CSSProperties = {
   fontWeight: 800,
 };
 
+const metaStyle: CSSProperties = {
+  marginTop: 8,
+  color: "var(--ac-muted)",
+  fontSize: 11,
+};
+
 const actionsStyle: CSSProperties = {
   display: "flex",
   justifyContent: "flex-end",
@@ -275,4 +352,14 @@ const secondaryBtnStyle: CSSProperties = {
   padding: "8px 12px",
   fontWeight: 900,
   cursor: "pointer",
+};
+
+const linkBtnStyle: CSSProperties = {
+  ...secondaryBtnStyle,
+  marginRight: "auto",
+};
+
+const likeBtnStyle: CSSProperties = {
+  ...secondaryBtnStyle,
+  color: "#fbbf24",
 };

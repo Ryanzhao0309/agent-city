@@ -187,9 +187,17 @@ export interface ThemePackDefinition {
   summary: string;
   previewUrl: string;
   creatorName?: string;
+  creatorUrl?: string;
+  version?: string;
+  license?: string;
+  minAgentCityVersion?: string;
+  sourceUrl?: string;
+  likeUrl?: string;
+  likeIssueNumber?: number;
   downloadCount?: number;
   likeCount?: number;
   builtIn?: boolean;
+  remote?: boolean;
   mapSurrounding?: MapSurrounding;
   assetIds?: string[];
   buildingSkins?: Record<string, string>;

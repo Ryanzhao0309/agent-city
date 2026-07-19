@@ -5,6 +5,11 @@
 Agent City is currently pre-1.0. Security fixes are applied to the latest code
 on the `main` branch.
 
+Community themes are loaded only from the reviewed
+[`agent-city-themes`](https://github.com/Ryanzhao0309/agent-city-themes)
+catalog. Report unsafe, infringing, or suspicious theme content through private
+vulnerability reporting rather than a public theme-like Issue.
+
 ## Report a vulnerability
 
 Please use GitHub's private vulnerability reporting for this repository. Do not

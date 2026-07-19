@@ -64,20 +64,30 @@ trusted code. Treat imported skills and external content as untrusted input.
 
 ## Theme packages
 
-Built-in themes are currently compile-time data and bundled assets. A future
-community registry will load a versioned catalog from a separate public
-repository.
+The public
+[agent-city-themes](https://github.com/Ryanzhao0309/agent-city-themes) repository
+is the publication boundary for community themes. Contributors submit pull
+requests; repository CI validates manifests and files; a CODEOWNER must approve
+the change before the protected `main` branch can publish it.
 
-A remote theme package should be declarative and include:
+A version 1 theme package is declarative and includes:
 
 - a versioned JSON manifest;
-- preview, map, building, terrain, and decoration images;
+- a preview and optional building skin images;
 - author and license metadata;
-- file sizes and SHA-256 hashes.
+- an Agent City compatibility version;
+- a GitHub Issue number for its public 👍 reactions after publication.
 
-The application must validate the manifest, enforce download limits, verify
-hashes, reject unsafe paths, and refuse executable content. Publication should
-require passing CI plus explicit maintainer approval.
+The Fastify server fetches the generated catalog from a fixed GitHub Contents
+API path, validates every field, and accepts image URLs
+only under the matching reviewed theme directory. It reads reaction counts from
+fixed GitHub Issue API paths and caches results for five minutes. The React
+client receives normalized metadata from `/api/themes/catalog`; it never gets a
+GitHub credential.
+
+Downloading a theme stores its reviewed manifest and exposes its building
+assets in the build-mode asset rail and building appearance picker. Downloading
+does not switch the active city map or modify placed buildings.
 
 ## Compatibility
 
