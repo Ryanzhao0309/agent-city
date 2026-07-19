@@ -1,0 +1,92 @@
+[
+  {
+    "id": "prompt-forge",
+    "name": "提示词熔炉",
+    "category": "AI 写作",
+    "rarity": "common",
+    "icon": "✍️",
+    "summary": "把粗糙想法整理成可复用的提示词模板。",
+    "npcPitch": "提示词熔炉能帮助 Agent 把零散想法打磨成清晰、可重复使用的提示词。"
+  },
+  {
+    "id": "brief-scribe",
+    "name": "简报书记",
+    "category": "AI 写作",
+    "rarity": "rare",
+    "icon": "📜",
+    "summary": "根据短笔记起草结构化项目简报。",
+    "npcPitch": "简报书记会把一个灵感整理成整座城市都能看懂的计划。"
+  },
+  {
+    "id": "data-lens",
+    "name": "数据透镜",
+    "category": "数据",
+    "rarity": "common",
+    "icon": "📊",
+    "summary": "总结 CSV 和表格导出文件。",
+    "npcPitch": "数据透镜让数据中心更擅长发现模式、缺口和快速摘要。"
+  },
+  {
+    "id": "kpi-oracle",
+    "name": "KPI 预言师",
+    "category": "数据",
+    "rarity": "epic",
+    "icon": "🔮",
+    "summary": "梳理指标、护栏和状态读数。",
+    "npcPitch": "KPI 预言师会在仪表盘吵起来之前，先指出哪些数字真正重要。"
+  },
+  {
+    "id": "flow-starter",
+    "name": "流程启动器",
+    "category": "自动化",
+    "rarity": "common",
+    "icon": "⚙️",
+    "summary": "把工作流想法草拟成 n8n 风格自动化步骤。",
+    "npcPitch": "流程启动器适合把还停留在脑子里的自动化想法变成第一版步骤。"
+  },
+  {
+    "id": "webhook-warden",
+    "name": "Webhook 守卫",
+    "category": "自动化",
+    "rarity": "rare",
+    "icon": "🛡️",
+    "summary": "设计更安全的 webhook payload 和重试行为。",
+    "npcPitch": "Webhook 守卫会让工作流再有野心，也不会随便把门敞开。"
+  },
+  {
+    "id": "pixel-polisher",
+    "name": "像素打磨师",
+    "category": "图像",
+    "rarity": "rare",
+    "icon": "🎨",
+    "summary": "为像素 UI 素材生成美术指导提示词。",
+    "npcPitch": "像素打磨师能帮助城市生成更好看的标牌、精灵、卡片和小细节。"
+  },
+  {
+    "id": "product-shot-mage",
+    "name": "产品图法师",
+    "category": "图像",
+    "rarity": "epic",
+    "icon": "✨",
+    "summary": "为产品视觉和广告场景创建提示词包。",
+    "npcPitch": "产品图法师有点耀眼，但当城市需要把东西拍得更好卖时很有用。"
+  },
+  {
+    "id": "inquiry-scout",
+    "name": "询盘侦察员",
+    "category": "商贸",
+    "rarity": "rare",
+    "icon": "🧭",
+    "summary": "分类买家消息并建议下一步回复。",
+    "npcPitch": "询盘侦察员会盯着商贸道路，帮助判断哪些买家消息值得优先处理。"
+  },
+  {
+    "id": "server-watch",
+    "name": "服务器巡检",
+    "category": "运维",
+    "rarity": "common",
+    "icon": "🖥️",
+    "summary": "为自托管服务健康状态起草检查清单。",
+    "npcPitch": "服务器巡检不花哨，但每座好城市都需要有人检查灯还亮着。"
+  }
+]

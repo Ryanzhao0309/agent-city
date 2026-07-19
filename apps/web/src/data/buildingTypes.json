@@ -1,0 +1,88 @@
+[
+  {
+    "type": "city-hall",
+    "name": "市政大厅",
+    "category": "core",
+    "size": [12, 12],
+    "color": "#5b7fd6",
+    "icon": "🏛️",
+    "locked": true,
+    "description": "城市管理与市政大厅 Agent 的默认建筑。"
+  },
+  {
+    "type": "agent-home",
+    "name": "Agent 小屋",
+    "category": "agents",
+    "size": [6, 6],
+    "color": "#7fbf7f",
+    "icon": "🏠",
+    "description": "Agent 居住、聊天并管理自己工作区的建筑。"
+  },
+  {
+    "type": "task-hall",
+    "name": "待办大厅",
+    "category": "work",
+    "size": [7, 5],
+    "color": "#c98a3a",
+    "icon": "✅",
+    "locked": true,
+    "description": "管理 Inbox、待办、进行中和已完成任务。"
+  },
+  {
+    "type": "skill-market",
+    "name": "技能大厅",
+    "category": "work",
+    "size": [5, 5],
+    "color": "#9b6bd6",
+    "icon": "🏪",
+    "locked": true,
+    "description": "管理、安装并分配 Agent 技能。"
+  },
+  {
+    "type": "archive",
+    "name": "档案馆",
+    "category": "knowledge",
+    "size": [6, 7],
+    "color": "#b0a0d0",
+    "icon": "📚",
+    "description": "管理知识库、文档和书签资料。"
+  },
+  {
+    "type": "data-center",
+    "name": "数据中心",
+    "category": "ops",
+    "size": [5, 5],
+    "color": "#4aa3a3",
+    "icon": "📊",
+    "description": "连接仪表板、报表和数据分析入口。"
+  },
+  {
+    "type": "server-room",
+    "name": "服务器机房",
+    "category": "ops",
+    "size": [7, 6],
+    "color": "#6a6a8a",
+    "icon": "🖥️",
+    "locked": true,
+    "description": "查看后端运行状态、设备接口和运维信息。"
+  },
+  {
+    "type": "theme-hall",
+    "name": "主题大厅",
+    "category": "core",
+    "size": [6, 6],
+    "color": "#38bdf8",
+    "icon": "🎨",
+    "locked": true,
+    "description": "下载、安装并应用城市皮肤包和地形包。"
+  },
+  {
+    "type": "custom-link",
+    "name": "自定义建筑",
+    "category": "custom",
+    "size": [5, 5],
+    "color": "#d68a8a",
+    "icon": "📎",
+    "description": "连接任意你想保存的 URL 或外部入口。"
+  }
+]

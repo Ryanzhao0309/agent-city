@@ -1,0 +1,34 @@
+{
+  "name": "agent-city-desktop",
+  "private": true,
+  "version": "0.1.2",
+  "description": "A self-hosted pixel workspace for AI agents, tools, knowledge, and tasks.",
+  "license": "AGPL-3.0-only",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Ryanzhao0309/agent-city.git"
+  },
+  "homepage": "https://github.com/Ryanzhao0309/agent-city#readme",
+  "bugs": {
+    "url": "https://github.com/Ryanzhao0309/agent-city/issues"
+  },
+  "engines": {
+    "node": ">=22.5.0"
+  },
+  "type": "module",
+  "scripts": {
+    "desktop:prepare": "node scripts/prepare-tauri.mjs",
+    "desktop:dev": "npm run desktop:prepare && tauri dev",
+    "desktop:build": "npm run desktop:prepare && tauri build --bundles app,dmg",
+    "desktop:build:app": "npm run desktop:prepare && tauri build --bundles app",
+    "tauri": "tauri"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2.7.0"
+  },
+  "dependencies": {
+    "@tauri-apps/plugin-dialog": "^2.7.1",
+    "@tauri-apps/plugin-notification": "^2.3.3",
+    "@tauri-apps/plugin-opener": "^2.5.4"
+  }
+}

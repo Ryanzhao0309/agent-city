@@ -1,0 +1,51 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test-and-build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: |
+            apps/server/package-lock.json
+            apps/web/package-lock.json
+
+      - name: Install server dependencies
+        working-directory: apps/server
+        run: npm ci
+
+      - name: Test server
+        working-directory: apps/server
+        run: npm test
+
+      - name: Install web dependencies
+        working-directory: apps/web
+        run: npm ci
+
+      - name: Test web app
+        working-directory: apps/web
+        run: npm test
+
+      - name: Build web app
+        working-directory: apps/web
+        run: npm run build

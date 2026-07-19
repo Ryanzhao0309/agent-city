@@ -1,0 +1,378 @@
+{
+  "theme": "megalithic-decor",
+  "coordinateSystem": "x/y use terrain sub-cell coordinates; buildings use half these values in grid cells",
+  "terrain": [
+    {
+      "asset": "plaza-stone-ring",
+      "use": "市政大厅前主广场",
+      "positions": [
+        [
+          172,
+          168
+        ],
+        [
+          176,
+          168
+        ],
+        [
+          180,
+          168
+        ],
+        [
+          172,
+          172
+        ],
+        [
+          176,
+          172
+        ],
+        [
+          180,
+          172
+        ],
+        [
+          172,
+          176
+        ],
+        [
+          176,
+          176
+        ],
+        [
+          180,
+          176
+        ]
+      ]
+    },
+    {
+      "asset": "broken-stone-path",
+      "use": "主广场向各建筑的弯曲石板路",
+      "positions": [
+        [
+          168,
+          164
+        ],
+        [
+          164,
+          160
+        ],
+        [
+          160,
+          156
+        ],
+        [
+          184,
+          164
+        ],
+        [
+          188,
+          160
+        ],
+        [
+          192,
+          156
+        ],
+        [
+          176,
+          180
+        ],
+        [
+          176,
+          184
+        ],
+        [
+          176,
+          188
+        ],
+        [
+          168,
+          176
+        ],
+        [
+          164,
+          180
+        ],
+        [
+          160,
+          184
+        ]
+      ]
+    },
+    {
+      "asset": "entrance-semicircle-paving",
+      "use": "建筑门口半圆铺装",
+      "positions": [
+        [
+          176,
+          158
+        ],
+        [
+          154,
+          148
+        ],
+        [
+          142,
+          178
+        ],
+        [
+          216,
+          152
+        ],
+        [
+          208,
+          186
+        ],
+        [
+          136,
+          150
+        ]
+      ]
+    },
+    {
+      "asset": "rune-circle-paving",
+      "use": "技能/数据/服务器建筑周边的蓝色符文圈",
+      "positions": [
+        [
+          150,
+          144
+        ],
+        [
+          136,
+          146
+        ],
+        [
+          216,
+          150
+        ],
+        [
+          214,
+          154
+        ]
+      ]
+    },
+    {
+      "asset": "flower-grass-sprinkle",
+      "use": "Agent 小屋生活区之间补密度",
+      "positions": [
+        [
+          126,
+          170
+        ],
+        [
+          134,
+          178
+        ],
+        [
+          146,
+          170
+        ],
+        [
+          154,
+          184
+        ]
+      ]
+    },
+    {
+      "asset": "wood-plank-walkway",
+      "use": "水边木栈道",
+      "positions": [
+        [
+          236,
+          214
+        ],
+        [
+          240,
+          218
+        ],
+        [
+          54,
+          142
+        ]
+      ]
+    },
+    {
+      "asset": "stepping-stones-water-edge",
+      "use": "溪流边踏石",
+      "positions": [
+        [
+          128,
+          214
+        ],
+        [
+          132,
+          218
+        ],
+        [
+          220,
+          210
+        ]
+      ]
+    }
+  ],
+  "decorations": [
+    {
+      "asset": "crystal-fountain",
+      "use": "主广场中心",
+      "x": 176,
+      "y": 170,
+      "width": 6,
+      "height": 6
+    },
+    {
+      "asset": "crystal-lamp-post",
+      "use": "主路节点",
+      "positions": [
+        [
+          166,
+          164
+        ],
+        [
+          186,
+          164
+        ],
+        [
+          166,
+          184
+        ],
+        [
+          190,
+          184
+        ],
+        [
+          150,
+          160
+        ],
+        [
+          210,
+          162
+        ]
+      ]
+    },
+    {
+      "asset": "notice-board",
+      "use": "Agent 生活区公告",
+      "x": 144,
+      "y": 176,
+      "width": 5,
+      "height": 5
+    },
+    {
+      "asset": "wooden-bench",
+      "use": "小屋之间休息点",
+      "positions": [
+        [
+          126,
+          184
+        ],
+        [
+          152,
+          176
+        ]
+      ]
+    },
+    {
+      "asset": "campfire-ring",
+      "use": "生活区篝火",
+      "x": 132,
+      "y": 184,
+      "width": 5,
+      "height": 5
+    },
+    {
+      "asset": "flower-bed",
+      "use": "建筑边缘花坛",
+      "positions": [
+        [
+          140,
+          166
+        ],
+        [
+          194,
+          166
+        ],
+        [
+          218,
+          174
+        ],
+        [
+          126,
+          166
+        ]
+      ]
+    },
+    {
+      "asset": "crates-and-barrels",
+      "use": "服务/待办/档案附近杂物",
+      "positions": [
+        [
+          210,
+          178
+        ],
+        [
+          162,
+          154
+        ],
+        [
+          194,
+          190
+        ]
+      ]
+    },
+    {
+      "asset": "scroll-pile",
+      "use": "档案馆旁",
+      "x": 142,
+      "y": 184,
+      "width": 4,
+      "height": 4
+    },
+    {
+      "asset": "tool-cart",
+      "use": "主题大厅或工坊旁",
+      "x": 196,
+      "y": 196,
+      "width": 5,
+      "height": 5
+    },
+    {
+      "asset": "wooden-dock",
+      "use": "水边木平台",
+      "positions": [
+        [
+          236,
+          216
+        ],
+        [
+          54,
+          142
+        ]
+      ]
+    },
+    {
+      "asset": "fishing-spot",
+      "use": "水边钓鱼点",
+      "x": 228,
+      "y": 218,
+      "width": 5,
+      "height": 5
+    },
+    {
+      "asset": "signpost",
+      "use": "路口导向牌",
+      "positions": [
+        [
+          160,
+          164
+        ],
+        [
+          184,
+          188
+        ],
+        [
+          218,
+          164
+        ]
+      ]
+    }
+  ]
+}

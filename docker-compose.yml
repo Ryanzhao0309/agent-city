@@ -1,0 +1,12 @@
+services:
+  agent-city:
+    build: .
+    # Or, once published: image: ghcr.io/<you>/agent-city:latest
+    ports:
+      - "3000:3000"
+    volumes:
+      - agent-city-data:/app/data
+    restart: unless-stopped
+
+volumes:
+  agent-city-data:
