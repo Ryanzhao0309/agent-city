@@ -73,7 +73,7 @@ the change before the protected `main` branch can publish it.
 A version 1 theme package is declarative and includes:
 
 - a versioned JSON manifest;
-- a preview and optional building skin images;
+- a preview, system-building skins, reusable buildings, ground/road tiles, and decorations;
 - author and license metadata;
 - an Agent City compatibility version;
 - a GitHub Issue number for its public 👍 reactions after publication.
@@ -85,9 +85,11 @@ fixed GitHub Issue API paths and caches results for five minutes. The React
 client receives normalized metadata from `/api/themes/catalog`; it never gets a
 GitHub credential.
 
-Downloading a theme stores its reviewed manifest and exposes its building
-assets in the build-mode asset rail and building appearance picker. Downloading
-does not switch the active city map or modify placed buildings.
+Downloading a theme stores its reviewed manifest and exposes every declared
+building, terrain, and decoration asset in Build Mode; building artwork is also
+available in the appearance picker. Downloading does not switch the active city
+map or modify placed buildings. The exact folder and manifest contract is
+documented in [docs/THEME_PACKAGES.md](THEME_PACKAGES.md).
 
 ## Compatibility
 

@@ -4,8 +4,9 @@ const REPOSITORY = "Ryanzhao0309/agent-city-themes";
 const CATALOG_URL = `https://api.github.com/repos/${REPOSITORY}/contents/catalog.json?ref=main`;
 const CACHE_MS = 5 * 60 * 1000;
 const MAX_THEMES = 100;
+const MAX_THEME_ASSETS = 250;
 const THEME_ID = /^theme-[a-z0-9]+(?:-[a-z0-9]+)*$/;
-const BUILDING_KEY = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+const ASSET_ID = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 const MAPS = new Set([
   "plain", "sea", "forest", "megalithic", "lava", "undersea", "toy-workshop",
   "changan-city", "sky-observatory", "volcanic-forge", "polar-crystal",
@@ -26,6 +27,12 @@ export interface PublishedTheme {
   sourceUrl: string;
   mapSurrounding: string;
   buildingSkins: Record<string, string>;
+  assets: Array<{
+    id: string;
+    kind: "terrain" | "decoration" | "building";
+    name: string;
+    url: string;
+  }>;
   likeIssueNumber?: number;
   likeUrl?: string;
   likeCount?: number;
@@ -96,9 +103,32 @@ export function parseThemeCatalog(value: unknown): PublishedThemeCatalog {
     const buildingSkins: Record<string, string> = {};
     for (const [key, rawUrl] of Object.entries(skins)) {
       const url = trustedUrl(rawUrl, "asset", id);
-      if (!BUILDING_KEY.test(key) || !url) throw new Error(`Theme ${id} has an invalid building skin.`);
+      if (!ASSET_ID.test(key) || !url) throw new Error(`Theme ${id} has an invalid building skin.`);
       buildingSkins[key] = url;
     }
+    const rawAssets = theme.assets === undefined ? [] : theme.assets;
+    if (!Array.isArray(rawAssets) || rawAssets.length > MAX_THEME_ASSETS) {
+      throw new Error(`Theme ${id} has an invalid asset list.`);
+    }
+    const assetIds = new Set<string>();
+    const assets = rawAssets.map((rawAsset, assetIndex) => {
+      const asset = record(rawAsset);
+      const assetId = text(asset?.id, 100);
+      const assetKind = asset?.kind;
+      const assetName = text(asset?.name, 80);
+      const url = trustedUrl(asset?.url, "asset", id);
+      if (!asset || !assetId || !ASSET_ID.test(assetId) || assetIds.has(assetId) ||
+        !["terrain", "decoration", "building"].includes(String(assetKind)) || !assetName || !url) {
+        throw new Error(`Theme ${id} has an invalid asset at index ${assetIndex}.`);
+      }
+      assetIds.add(assetId);
+      return {
+        id: assetId,
+        kind: assetKind as "terrain" | "decoration" | "building",
+        name: assetName,
+        url,
+      };
+    });
     const likeIssueNumber = theme.likeIssueNumber;
     const likeUrl = likeIssueNumber === undefined ? undefined : trustedUrl(theme.likeUrl, "repository");
     if (likeIssueNumber !== undefined && (!Number.isInteger(likeIssueNumber) || Number(likeIssueNumber) < 1 || !likeUrl)) {
@@ -107,7 +137,7 @@ export function parseThemeCatalog(value: unknown): PublishedThemeCatalog {
     return {
       id, name, version: version!, kind: kind as PublishedTheme["kind"], icon, summary,
       creatorName, creatorUrl, license, minAgentCityVersion: minAgentCityVersion!, previewUrl,
-      sourceUrl, mapSurrounding, buildingSkins,
+      sourceUrl, mapSurrounding, buildingSkins, assets,
       ...(likeIssueNumber === undefined ? {} : { likeIssueNumber: Number(likeIssueNumber), likeUrl: likeUrl! }),
     };
   });

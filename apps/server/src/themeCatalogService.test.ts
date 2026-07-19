@@ -17,6 +17,20 @@ function validCatalog() {
       buildingSkins: {
         "city-hall": "https://raw.githubusercontent.com/Ryanzhao0309/agent-city-themes/main/themes/theme-test/assets/city-hall.png",
       },
+      assets: [
+        {
+          id: "terrain-stone-path",
+          kind: "terrain",
+          name: "Test · Stone Path",
+          url: "https://raw.githubusercontent.com/Ryanzhao0309/agent-city-themes/main/themes/theme-test/assets/ground/stone-path.png",
+        },
+        {
+          id: "decoration-lantern",
+          kind: "decoration",
+          name: "Test · Lantern",
+          url: "https://raw.githubusercontent.com/Ryanzhao0309/agent-city-themes/main/themes/theme-test/assets/decorations/lantern.png",
+        },
+      ],
       likeIssueNumber: 7,
       likeUrl: "https://github.com/Ryanzhao0309/agent-city-themes/issues/7",
     }],
@@ -27,6 +41,7 @@ test("parseThemeCatalog accepts repository-scoped assets", () => {
   const parsed = parseThemeCatalog(validCatalog());
   assert.equal(parsed.themes[0].id, "theme-test");
   assert.equal(parsed.themes[0].likeIssueNumber, 7);
+  assert.deepEqual(parsed.themes[0].assets.map((asset) => asset.kind), ["terrain", "decoration"]);
 });
 
 test("parseThemeCatalog rejects assets from an unreviewed host", () => {
@@ -39,6 +54,16 @@ test("parseThemeCatalog rejects duplicate ids", () => {
   const catalog = validCatalog();
   catalog.themes.push({ ...catalog.themes[0] });
   assert.throws(() => parseThemeCatalog(catalog), /duplicate id/);
+});
+
+test("parseThemeCatalog rejects unreviewed or duplicate theme assets", () => {
+  const external = validCatalog();
+  external.themes[0].assets[0].url = "https://example.com/tracker.png";
+  assert.throws(() => parseThemeCatalog(external), /invalid asset/);
+
+  const duplicate = validCatalog();
+  duplicate.themes[0].assets.push({ ...duplicate.themes[0].assets[0] });
+  assert.throws(() => parseThemeCatalog(duplicate), /invalid asset/);
 });
 
 test("parseLikeCount reads only a safe thumbs-up count", () => {

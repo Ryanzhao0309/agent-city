@@ -179,6 +179,13 @@ export interface NpcDefinition {
 export type AppThemeMode = "system" | "light" | "dark";
 export type CityTimeOfDay = "auto" | "day" | "night";
 
+export interface ThemePackAssetDefinition {
+  id: string;
+  kind: CustomAssetKind;
+  name: string;
+  url: string;
+}
+
 export interface ThemePackDefinition {
   id: string;
   name: string;
@@ -201,6 +208,7 @@ export interface ThemePackDefinition {
   mapSurrounding?: MapSurrounding;
   assetIds?: string[];
   buildingSkins?: Record<string, string>;
+  assets?: ThemePackAssetDefinition[];
   installedAt?: string;
 }
 

@@ -4,6 +4,8 @@ Application changes belong in this repository. Theme artwork and theme-pack
 metadata belong in the separate
 [agent-city-themes](https://github.com/Ryanzhao0309/agent-city-themes) repository,
 where a dedicated schema, rights declaration, and visual review process apply.
+The expected folder layout and application integration are summarized in
+[docs/THEME_PACKAGES.md](docs/THEME_PACKAGES.md).
 
 Thank you for helping build Agent City.
 
