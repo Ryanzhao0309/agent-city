@@ -37,6 +37,46 @@ workspace organization, local ownership, and deliberate human approval.
 - Browse reviewed community themes, download their assets, and view public GitHub likes.
 - Run as a Docker-hosted web app or a macOS Tauri desktop app.
 
+## Product tour
+
+### A living workspace instead of another flat dashboard
+
+The city map makes Agents, tools, knowledge, tasks, and service entry points
+spatial and visible. Buildings remain functional while the surrounding world
+can be rearranged and themed.
+
+![Agent City overview with buildings, residents, paths, and themed scenery](docs/screenshots/city-overview.webp)
+
+### Manage every Agent from City Hall
+
+City Hall provides one place to review Agent roles, assigned buildings, runtime
+status, connected models, learned skills, and current responsibilities.
+
+![City Hall Agent management interface](docs/screenshots/agent-management.webp)
+
+### Work with Agents through persistent conversations
+
+Each resident can maintain conversations, use an authorized workspace, create
+plans, call approved tools, and expose its execution record. The example below
+has one personal display name redacted before publication.
+
+![Agent conversation with a generated daily plan and execution record](docs/screenshots/agent-conversation.webp)
+
+### Turn buildings into operational workspaces
+
+The Todo Hall organizes incoming work into Inbox, Todo, Doing, and Done while
+allowing an assigned Agent to read and act on building tasks.
+
+![Todo Hall with task status columns and editable work items](docs/screenshots/todo-hall.webp)
+
+### Review skills before installation
+
+The Skill Hall can load a local `SKILL.md` or reviewed URL, ask the Guild Keeper
+to explain its behavior, and show usage guidance and permission declarations
+before the skill is installed for an Agent.
+
+![Skill Hall review and installation interface](docs/screenshots/skill-installation.webp)
+
 ## Privacy and security model
 
 Agent City is local-first:
