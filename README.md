@@ -1,5 +1,7 @@
 # Agent City
 
+[English](README.md) | [简体中文](README.zh-CN.md)
+
 Agent City is an open-source, self-hosted pixel workspace for organizing AI
 agents, tools, knowledge, tasks, and service links as a living city.
 
@@ -28,6 +30,8 @@ workspace organization, local ownership, and deliberate human approval.
 - Arrange buildings, terrain, decorations, and themed city layouts.
 - Open self-hosted services or external tools from city buildings.
 - Configure persistent local agents with roles, models, skills, and workspaces.
+- Configure OpenAI-compatible models once in global Model Management, then
+  assign verified profiles to Agents.
 - Run agent tasks with an approval gate for filesystem mutations.
 - Maintain Markdown knowledge documents and assign them to specific agents.
 - Review task history, tool calls, approvals, errors, and results.
@@ -85,8 +89,8 @@ Agent City is local-first:
   are excluded from version control.
 - The desktop build always starts from an empty seed database; it never packages
   a developer's local city, Agent profiles, conversations, or secrets.
-- On macOS, API keys and Google refresh tokens are stored in Keychain and are not
-  written into Agent JSON.
+- On macOS, API keys are stored in Keychain and are never written into Agent
+  JSON or returned as plaintext by the API.
 - Each Agent receives an explicitly selected working directory.
 - File writes, moves, renames, and deletions require approval.
 - Read-only web requests block loopback, private networks, cloud metadata
