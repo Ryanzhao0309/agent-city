@@ -3,12 +3,13 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import test from "node:test";
+import { installTestModelProfile } from "./testModelProfile.js";
 
 test("a mutating tool pauses for approval and resumes after approval", async () => {
   const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), "agent-city-runtime-"));
   process.env.AGENT_CITY_DATA_DIR = dataDir;
   const { saveAgentConfig, saveWorkspaceFile } = await import("./agentStore.js");
-  const { saveSecret } = await import("./db.js");
+  const { db, saveSecret } = await import("./db.js");
   const {
     createAgentRun,
     getAgentRun,
@@ -20,16 +21,12 @@ test("a mutating tool pauses for approval and resumes after approval", async () 
     displayName: "Test Agent",
     brain: {
       enabled: true,
-      provider: "custom",
-      baseUrl: "https://model.invalid/v1",
-      model: "test-model",
-      apiKeyRef: "TEST_MODEL_KEY",
-      temperature: 0,
+      modelProfileId: "runtime-test-profile",
     },
     files: { identity: "Test identity", agent: "Test responsibilities" },
-    permissions: { workspace: "none", gmail: "none", calendar: "none", web: "none", cityData: "none" },
+    permissions: { workspace: "none", web: "none", cityData: "none" },
   });
-  saveSecret("TEST_MODEL_KEY", "test-secret");
+  installTestModelProfile(db, saveSecret, { id: "runtime-test-profile", secretRef: "TEST_MODEL_KEY" });
   saveWorkspaceFile("test-agent", "agent-city-video-plan.md", Buffer.from("video plan", "utf8"));
 
   let modelCall = 0;

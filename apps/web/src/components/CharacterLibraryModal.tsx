@@ -142,7 +142,7 @@ export function CharacterLibraryModal() {
                     </div>
                     <div style={brainStatusStyle}>
                       {brain?.enabled
-                        ? `${brain.provider}${brain.model ? ` / ${brain.model}` : ""}`
+                        ? brain.modelProfileId ? "已绑定全局模型" : "已启用，待选择模型"
                         : "AI Brain 未启用"}
                     </div>
                   </div>

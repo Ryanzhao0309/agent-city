@@ -3,27 +3,24 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import test from "node:test";
+import { installTestModelProfile } from "./testModelProfile.js";
 
 test("the skill hall resident reviews an untrusted SKILL.md without tools", async () => {
   const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), "agent-city-skill-review-"));
   process.env.AGENT_CITY_DATA_DIR = dataDir;
   const { saveAgentConfig } = await import("./agentStore.js");
-  const { saveSecret } = await import("./db.js");
+  const { db, saveSecret } = await import("./db.js");
   const { reviewInstructionSkill } = await import("./agentRuntime.js");
   saveAgentConfig("skill-admin", {
     displayName: "Skill Admin",
     brain: {
       enabled: true,
-      provider: "custom",
-      baseUrl: "https://model.invalid/v1",
-      model: "test-model",
-      apiKeyRef: "SKILL_REVIEW_KEY",
-      temperature: 0,
+      modelProfileId: "skill-review-profile",
     },
     files: { identity: "Skill administrator", agent: "Review skills." },
-    permissions: { workspace: "none", gmail: "none", calendar: "none", web: "none", cityData: "none" },
+    permissions: { workspace: "none", web: "none", cityData: "none" },
   });
-  saveSecret("SKILL_REVIEW_KEY", "test-secret");
+  installTestModelProfile(db, saveSecret, { id: "skill-review-profile", secretRef: "SKILL_REVIEW_KEY" });
 
   let requestBody = "";
   const originalFetch = globalThis.fetch;

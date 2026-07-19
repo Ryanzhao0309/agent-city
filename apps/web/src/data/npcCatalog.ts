@@ -299,18 +299,12 @@ export function getResidentForBuildingType(
 }
 
 export function createDefaultCharacterConfig(character: NpcDefinition): CharacterRuntimeConfig {
-  const provider = character.agentKey === "hermes" ? "custom" : "openai-compatible";
-  const model = character.agentKey === "hermes" ? "hermes-agent" : "";
   const isCityManager = character.id === "mayor";
   return {
     displayName: character.name,
     brain: {
       enabled: false,
-      provider,
-      baseUrl: "",
-      model,
-      apiKeyRef: "",
-      temperature: 0.7,
+      modelProfileId: "",
     },
     files: {
       user: `名称：${character.name}\n职责：${character.role}\n默认建筑类型：${character.defaultBuildingType}`,
@@ -325,8 +319,6 @@ export function createDefaultCharacterConfig(character: NpcDefinition): Characte
     },
     permissions: {
       workspace: "none",
-      gmail: "none",
-      calendar: "none",
       web: "none",
       cityData: isCityManager ? "read" : "none",
       cityDataReadonly: isCityManager,
@@ -360,7 +352,10 @@ export function createDefaultCharacterConfigs(
         character.id,
         {
           displayName: saved?.displayName ?? defaults.displayName,
-          brain: { ...defaults.brain, ...saved?.brain },
+          brain: {
+            enabled: Boolean(saved?.brain?.modelProfileId) && Boolean(saved?.brain?.enabled),
+            modelProfileId: saved?.brain?.modelProfileId ?? "",
+          },
           files: { ...defaults.files, ...saved?.files },
           permissions: {
             workspace:
@@ -370,8 +365,6 @@ export function createDefaultCharacterConfigs(
                 : saved?.permissions?.directory === "approval-required"
                   ? "write-with-approval"
                   : defaults.permissions?.workspace ?? "none"),
-            gmail: saved?.permissions?.gmail ?? defaults.permissions?.gmail ?? "none",
-            calendar: saved?.permissions?.calendar ?? defaults.permissions?.calendar ?? "none",
             web: saved?.permissions?.web ?? defaults.permissions?.web ?? "none",
             cityData:
               saved?.permissions?.cityData ??

@@ -16,15 +16,6 @@ export interface BuildingAgentStatus {
   detail: string;
 }
 
-const providerSecretRef: Record<string, string> = {
-  deepseek: "DEEPSEEK_API_KEY",
-  gemini: "GEMINI_API_KEY",
-  kimi: "KIMI_API_KEY",
-  doubao: "DOUBAO_API_KEY",
-  qwen: "QWEN_API_KEY",
-  "openai-compatible": "OPENAI_API_KEY",
-};
-
 export function getCharacterDisplayName(
   character: NpcDefinition | null,
   config: CharacterRuntimeConfig | undefined
@@ -32,16 +23,10 @@ export function getCharacterDisplayName(
   return config?.displayName?.trim() || character?.name || "未分配";
 }
 
-export function getExpectedSecretRef(config: CharacterRuntimeConfig | undefined): string {
-  if (!config) return "";
-  return config.brain.apiKeyRef || providerSecretRef[config.brain.provider] || "";
-}
-
 export function getBuildingAgentStatus({
   resident,
   config,
   npc,
-  configuredSecretKeys = [],
 }: {
   building: PlacedBuilding;
   resident: NpcDefinition | null;
@@ -64,10 +49,8 @@ export function getBuildingAgentStatus({
 
   const residentName = getCharacterDisplayName(resident, config);
   const brainEnabled = Boolean(config?.brain.enabled);
-  const modelReady = Boolean(config?.brain.model);
-  const secretRef = getExpectedSecretRef(config);
-  const secretReady =
-    config?.brain.provider === "local" || (Boolean(secretRef) && configuredSecretKeys.includes(secretRef));
+  const modelReady = Boolean(config?.brain.modelProfileId);
+  const secretReady = modelReady;
   const ready = brainEnabled && modelReady && secretReady;
   const presence = npc?.presence === "walking" ? "walking" : "home";
 
@@ -85,7 +68,7 @@ export function getBuildingAgentStatus({
     ready,
     label: ready ? "运行中" : "停工",
     detail: ready
-      ? `${residentName} 已配置 ${config?.brain.provider} / ${config?.brain.model}。`
+      ? `${residentName} 已绑定全局模型。`
       : missing.join(" / "),
   };
 }

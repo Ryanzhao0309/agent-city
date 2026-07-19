@@ -69,37 +69,3 @@ export async function retryAgentRun(runId: string): Promise<void> {
   const data = await response.json().catch(() => null);
   if (!response.ok) throw new Error(data?.error ?? "重试任务失败。");
 }
-
-export interface GoogleConnectionStatus {
-  configured: boolean;
-  connected: boolean;
-  email: string | null;
-  scopes: string[];
-  gmail: boolean;
-  gmailDraft: boolean;
-  calendar: boolean;
-  connectedAt: string | null;
-}
-
-export async function getGoogleStatus(): Promise<GoogleConnectionStatus> {
-  const response = await fetch(apiUrl("/api/google/status"));
-  const data = await response.json().catch(() => null);
-  if (!response.ok) throw new Error(data?.error ?? "Google 状态读取失败。");
-  return data;
-}
-
-export async function startGoogleOAuth(services: Array<"gmail" | "calendar">): Promise<string> {
-  const response = await fetch(apiUrl("/api/google/oauth/start"), {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ services }),
-  });
-  const data = await response.json().catch(() => null);
-  if (!response.ok) throw new Error(data?.error ?? "Google 授权启动失败。");
-  return data.authUrl;
-}
-
-export async function disconnectGoogle(): Promise<void> {
-  const response = await fetch(apiUrl("/api/google"), { method: "DELETE" });
-  if (!response.ok) throw new Error("Google 断开失败。");
-}

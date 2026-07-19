@@ -3,28 +3,25 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import test from "node:test";
+import { installTestModelProfile } from "./testModelProfile.js";
 
 test("chat attachments include readable file contents and image input in the model turn", async () => {
   const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), "agent-city-attachments-"));
   process.env.AGENT_CITY_DATA_DIR = dataDir;
   const { saveAgentConfig, saveWorkspaceFile } = await import("./agentStore.js");
-  const { saveSecret } = await import("./db.js");
+  const { db, saveSecret } = await import("./db.js");
   const { createAgentRun, getAgentRun } = await import("./agentRuntime.js");
 
   saveAgentConfig("attachment-agent", {
     displayName: "Attachment Agent",
     brain: {
       enabled: true,
-      provider: "custom",
-      baseUrl: "https://model.invalid/v1",
-      model: "vision-model",
-      apiKeyRef: "ATTACHMENT_MODEL_KEY",
-      temperature: 0,
+      modelProfileId: "attachment-test-profile",
     },
     files: { identity: "Test identity", agent: "Inspect user attachments" },
-    permissions: { workspace: "none", gmail: "none", calendar: "none", web: "none", cityData: "none" },
+    permissions: { workspace: "none", web: "none", cityData: "none" },
   });
-  saveSecret("ATTACHMENT_MODEL_KEY", "test-secret");
+  installTestModelProfile(db, saveSecret, { id: "attachment-test-profile", secretRef: "ATTACHMENT_MODEL_KEY", model: "vision-model" });
   saveWorkspaceFile("attachment-agent", "brief.txt", Buffer.from("附件里的项目代号是 Aurora。", "utf8"));
   saveWorkspaceFile("attachment-agent", "pixel.png", Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]));
 

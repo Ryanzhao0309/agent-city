@@ -11,6 +11,7 @@ import {
   subscribeDesktopNotificationState,
   type DesktopNotificationState,
 } from "../services/desktopNotificationService";
+import { ModelManager } from "./ModelManager";
 
 const themeOptions: Array<{ value: AppThemeMode; label: string }> = [
   { value: "system", label: "跟随系统" },
@@ -32,54 +33,6 @@ const languageOptions = [
 ];
 
 const secretSlots = [
-  {
-    key: "GOOGLE_OAUTH_CLIENT_ID",
-    name: "Google OAuth Client ID",
-    hint: "Gmail 与 Google Calendar 桌面授权使用的 Desktop app Client ID。",
-    guideUrl: "https://console.cloud.google.com/apis/credentials",
-  },
-  {
-    key: "GOOGLE_OAUTH_CLIENT_SECRET",
-    name: "Google OAuth Client Secret",
-    hint: "Google Desktop OAuth 客户端附带的 secret；仅保存在本机 Keychain。",
-    guideUrl: "https://console.cloud.google.com/apis/credentials",
-  },
-  {
-    key: "DEEPSEEK_API_KEY",
-    name: "DeepSeek API",
-    hint: "DeepSeek provider 默认使用这个密钥。",
-    guideUrl: "https://platform.deepseek.com/api_keys",
-  },
-  {
-    key: "GEMINI_API_KEY",
-    name: "Google Gemini API",
-    hint: "Gemini provider 默认使用这个密钥。",
-    guideUrl: "https://aistudio.google.com/apikey",
-  },
-  {
-    key: "OPENAI_API_KEY",
-    name: "OpenAI Compatible",
-    hint: "用于任意 OpenAI-compatible 服务。",
-    guideUrl: "https://platform.openai.com/api-keys",
-  },
-  {
-    key: "KIMI_API_KEY",
-    name: "Kimi / Moonshot API",
-    hint: "Kimi provider 默认使用这个密钥，Base URL: https://api.moonshot.cn/v1。",
-    guideUrl: "https://platform.moonshot.cn/console/api-keys",
-  },
-  {
-    key: "DOUBAO_API_KEY",
-    name: "豆包 / 火山方舟 API",
-    hint: "豆包 provider 默认使用这个密钥，Base URL: https://ark.cn-beijing.volces.com/api/v3。",
-    guideUrl: "https://console.volcengine.com/ark/region:ark+cn-beijing/apiKey",
-  },
-  {
-    key: "QWEN_API_KEY",
-    name: "通义千问 / DashScope API",
-    hint: "通义千问 provider 默认使用这个密钥，Base URL: https://dashscope.aliyuncs.com/compatible-mode/v1。",
-    guideUrl: "https://dashscope.console.aliyun.com/apiKey",
-  },
   {
     key: "BRAVE_SEARCH_API_KEY",
     name: "Brave Search API",
@@ -346,11 +299,13 @@ export function SettingsModal() {
             </div>
           </section>
 
+          <ModelManager />
+
           <section className="settings-api-section" style={apiSectionStyle}>
             <div style={apiSectionHeaderStyle}>
               <div>
-                <h3 style={{ ...sectionTitleStyle, color: "var(--ac-text)", fontSize: 16 }}>API Keys</h3>
-                <p style={apiSectionHintStyle}>密钥只保存在本机 Keychain，可随时更新或清除。</p>
+                <h3 style={{ ...sectionTitleStyle, color: "var(--ac-text)", fontSize: 16 }}>联网搜索密钥</h3>
+                <p style={apiSectionHintStyle}>Google 集成与联网搜索密钥只保存在本机 Keychain。</p>
               </div>
               <span style={apiSecurityBadgeStyle}>本机安全存储</span>
             </div>

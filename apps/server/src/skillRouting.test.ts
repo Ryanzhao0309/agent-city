@@ -3,12 +3,13 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import test from "node:test";
+import { installTestModelProfile } from "./testModelProfile.js";
 
 test("quoted skill descriptions retain trigger phrases and meta questions load the only learned skill", async () => {
   const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), "agent-city-skill-routing-"));
   process.env.AGENT_CITY_DATA_DIR = dataDir;
   const { installSkillForAgents, previewSkillContent, saveAgentConfig } = await import("./agentStore.js");
-  const { saveSecret } = await import("./db.js");
+  const { db, saveSecret } = await import("./db.js");
   const { createAgentRun, getAgentRun, listRunEvents } = await import("./agentRuntime.js");
   const markdown = `---
 name: adhd-founder-planner
@@ -27,14 +28,10 @@ FULL_SKILL_MARKER: organize work by energy-based swim lanes.
     displayName: "Skill Agent",
     brain: {
       enabled: true,
-      provider: "custom",
-      baseUrl: "https://model.invalid/v1",
-      model: "test-model",
-      apiKeyRef: "SKILL_TEST_KEY",
-      temperature: 0,
+      modelProfileId: "skill-routing-profile",
     },
     files: { identity: "Skill tester", agent: "Explain learned skills." },
-    permissions: { workspace: "none", gmail: "none", calendar: "none", web: "none", cityData: "none" },
+    permissions: { workspace: "none", web: "none", cityData: "none" },
   });
   installSkillForAgents(["skill-agent"], {
     id: preview.slug,
@@ -45,7 +42,7 @@ FULL_SKILL_MARKER: organize work by energy-based swim lanes.
     sourceUrl: preview.sourceUrl,
     content: markdown,
   });
-  saveSecret("SKILL_TEST_KEY", "test-secret");
+  installTestModelProfile(db, saveSecret, { id: "skill-routing-profile", secretRef: "SKILL_TEST_KEY" });
 
   const requestBodies: Array<Record<string, unknown>> = [];
   const originalFetch = globalThis.fetch;

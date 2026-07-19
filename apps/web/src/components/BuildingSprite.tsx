@@ -9,6 +9,7 @@ import { buildingDepth } from "../utils/depth";
 import { getAssignedResident } from "../data/npcCatalog";
 import { getBuildingAgentStatus } from "../utils/agentStatus";
 import { getBuildingPurpose } from "../utils/buildingPurpose";
+import { getBuildingBaselineShift } from "../utils/buildingVisuals";
 
 export function BuildingSprite({ building }: { building: PlacedBuilding }) {
   const bt = buildingTypes[building.type];
@@ -51,6 +52,7 @@ export function BuildingSprite({ building }: { building: PlacedBuilding }) {
   const footprintCenter = isoToScreen(building.x + size[0] / 2, building.y + size[1] / 2);
   const visualWidth = Math.max(156, size[0] * CELL_SIZE);
   const visualHeight = Math.max(150, size[1] * CELL_SIZE * 0.92);
+  const baselineShift = getBuildingBaselineShift(imageSrc, visualHeight);
   const hitWidth = Math.max(58, Math.min(visualWidth * 0.78, size[0] * CELL_SIZE * 0.95));
   const hitHeight = Math.max(44, Math.min(visualHeight * 0.34, size[1] * CELL_SIZE * 0.72));
   const depth = buildingDepth({ x: building.x, y: building.y, size });
@@ -149,12 +151,12 @@ export function BuildingSprite({ building }: { building: PlacedBuilding }) {
             height: "100%",
             objectFit: "contain",
             objectPosition: "center bottom",
-            transform: "translateZ(0)",
+            transform: `translate3d(0, ${baselineShift}px, 0)`,
             backfaceVisibility: "hidden",
             willChange: "transform",
             filter: isSelected
-              ? "drop-shadow(0 0 2px rgba(255,255,255,.85)) drop-shadow(0 0 8px rgba(56,189,248,.72)) drop-shadow(-3px 6px 3px rgba(39,52,21,0.22))"
-              : "drop-shadow(-3px 6px 3px rgba(39,52,21,0.22))",
+              ? "drop-shadow(0 0 2px rgba(255,255,255,.85)) drop-shadow(0 0 8px rgba(56,189,248,.72)) drop-shadow(0 1px 1px rgba(39,52,21,0.14))"
+              : "drop-shadow(0 1px 1px rgba(39,52,21,0.14))",
           }}
         />
       )}

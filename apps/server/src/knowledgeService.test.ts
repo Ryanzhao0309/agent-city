@@ -12,7 +12,7 @@ test("private workspace knowledge index follows file updates and deletion", asyn
   saveAgentConfig("knowledge-agent", {
     displayName: "Knowledge Agent",
     brain: { enabled: false, provider: "local", baseUrl: "", model: "", apiKeyRef: "", temperature: 0 },
-    files: {}, permissions: { workspace: "none", gmail: "none", calendar: "none", web: "none", cityData: "none" },
+    files: {}, permissions: { workspace: "none", web: "none", cityData: "none" },
   });
   try {
     saveWorkspaceFile("knowledge-agent", "policy.md", Buffer.from("# 报销制度\n差旅住宿上限是 800 元。"));
@@ -47,7 +47,7 @@ test("city knowledge documents are assigned, indexed, updated, and revoked per a
     saveAgentConfig(agentId, {
       displayName: agentId,
       brain: { enabled: false, provider: "local", baseUrl: "", model: "", apiKeyRef: "", temperature: 0 },
-      files: {}, permissions: { workspace: "none", gmail: "none", calendar: "none", web: "none", cityData: "none" },
+      files: {}, permissions: { workspace: "none", web: "none", cityData: "none" },
     });
   }
   try {

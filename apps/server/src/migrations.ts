@@ -1,6 +1,6 @@
 import type { DatabaseSync } from "node:sqlite";
 
-export const LATEST_SCHEMA_VERSION = 7;
+export const LATEST_SCHEMA_VERSION = 9;
 
 function hasColumn(db: DatabaseSync, table: string, column: string): boolean {
   const rows = db.prepare(`PRAGMA table_info(${table})`).all() as Array<{ name: string }>;
@@ -327,9 +327,41 @@ function migration7(db: DatabaseSync): void {
   `);
 }
 
+function migration8(db: DatabaseSync): void {
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS model_profile (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      template TEXT NOT NULL DEFAULT 'custom',
+      protocol TEXT NOT NULL,
+      base_url TEXT NOT NULL,
+      model TEXT NOT NULL,
+      secret_ref TEXT NOT NULL UNIQUE,
+      temperature REAL,
+      max_tokens INTEGER,
+      extra_body_json TEXT NOT NULL DEFAULT '{}',
+      enabled INTEGER NOT NULL DEFAULT 0,
+      is_default INTEGER NOT NULL DEFAULT 0,
+      validation_status TEXT NOT NULL DEFAULT 'unverified',
+      validated_at TEXT,
+      validation_error TEXT,
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS idx_model_profile_updated
+      ON model_profile(updated_at DESC);
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_model_profile_single_default
+      ON model_profile(is_default) WHERE is_default = 1;
+  `);
+}
+
+function migration9(db: DatabaseSync): void {
+  db.exec("DROP TABLE IF EXISTS google_oauth_state");
+}
+
 export function runMigrations(db: DatabaseSync): void {
   let current = version(db);
-  const migrations = [migration1, migration2, migration3, migration4, migration5, migration6, migration7];
+  const migrations = [migration1, migration2, migration3, migration4, migration5, migration6, migration7, migration8, migration9];
   while (current < LATEST_SCHEMA_VERSION) {
     db.exec("BEGIN IMMEDIATE");
     try {
