@@ -148,6 +148,8 @@ const THEME_ASSET_PREFIXES: Record<string, string[]> = {
 };
 
 export function getAssetThemePackId(asset: CustomSceneAsset): string | null {
+  const remoteMatch = /^project-theme:(theme-[a-z0-9]+(?:-[a-z0-9]+)*):/.exec(asset.id);
+  if (remoteMatch) return remoteMatch[1];
   for (const [packId, prefixes] of Object.entries(THEME_ASSET_PREFIXES)) {
     if (prefixes.some((prefix) => asset.url.startsWith(prefix))) return packId;
   }
@@ -160,6 +162,19 @@ function installedPackIds(installedThemePacks: ThemePackDefinition[] | undefined
 
 export function getProjectAssetsForThemePack(packId: string): CustomSceneAsset[] {
   return LOCAL_PROJECT_ASSETS.filter((asset) => getAssetThemePackId(asset) === packId);
+}
+
+export function getThemePackAssets(pack: ThemePackDefinition): CustomSceneAsset[] {
+  const local = getProjectAssetsForThemePack(pack.id);
+  const remote = Object.entries(pack.buildingSkins ?? {}).map(([buildingType, url]) => ({
+    id: `project-theme:${pack.id}:${buildingType}`,
+    kind: "building" as const,
+    name: `${pack.name} · ${buildingType}`,
+    url,
+    source: "project" as const,
+  }));
+  if (pack.remote && remote.length) return remote;
+  return [...local, ...remote.filter((asset) => !local.some((item) => item.url === asset.url))];
 }
 
 export function getAvailableProjectAssets(

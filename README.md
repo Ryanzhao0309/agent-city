@@ -34,6 +34,7 @@ workspace organization, local ownership, and deliberate human approval.
 - Schedule recurring agent tasks and receive desktop notifications.
 - Connect Gmail and Google Calendar with user-authorized scopes.
 - Export and import city layouts.
+- Browse reviewed community themes, download their assets, and view public GitHub likes.
 - Run as a Docker-hosted web app or a macOS Tauri desktop app.
 
 ## Privacy and security model
@@ -76,7 +77,7 @@ process. It uses Node's built-in `node:sqlite`, so no native database addon or
 Node compiler toolchain is required.
 
 See [docs/architecture.md](docs/architecture.md) for component boundaries,
-local-data behavior, and the planned community theme registry.
+local-data behavior, and the community theme registry.
 
 ## Run with Docker
 
@@ -181,19 +182,29 @@ Google OAuth application verification.
 
 ## Themes and community content
 
-Built-in themes are currently bundled with the application. The planned
-`agent-city-themes` registry will allow contributors to submit declarative
-theme packages through pull requests.
+Reviewed community themes live in the public
+[agent-city-themes](https://github.com/Ryanzhao0309/agent-city-themes) registry.
+Agent City reads its generated catalog through the local server and accepts
+asset URLs only from that repository's reviewed `main` branch.
 
 The registry design separates contribution from publication:
 
 1. contributors submit a theme through a pull request;
 2. automated checks validate its manifest, files, size, and license;
-3. maintainers install and test the generated preview package;
-4. only an approved release updates the catalog read by Agent City.
+3. maintainers preview and test the theme;
+4. only an approved merge updates the catalog read by Agent City.
 
-Theme packages will contain data and visual assets only, never executable
-JavaScript.
+The Theme Hall only downloads a package. It never changes the current city.
+Downloaded building artwork becomes available in the build-mode asset rail and
+in an individual building's appearance settings.
+
+Each published theme has a locked GitHub showcase Issue. Agent City reads its
+public 👍 reaction count and opens the Issue when a user chooses to like the
+theme. The application does not request or store a GitHub access token.
+
+Theme packages contain JSON and visual assets only, never executable code,
+HTML, SVG, or external tracking resources. See the registry's contribution
+guide and manifest schema before submitting artwork.
 
 ## Contributing
 

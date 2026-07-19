@@ -59,7 +59,7 @@ import { generateLayoutPreview } from "../utils/layoutPreview";
 import { loadLayout, saveLayout } from "../utils/storage";
 import { getBuildingPurpose, inferBuildingPurpose, isSystemPurpose } from "../utils/buildingPurpose";
 import { DEFAULT_CUSTOM_BUILDING_SIZE, getCustomBuildingSize, getThemeBuildingSpec, inferThemeBuildingSize } from "../utils/customBuildingSize";
-import { filterAvailableProjectAssets, getAvailableProjectAssets, getProjectAssetsForThemePack, localizeProjectAsset } from "../data/localAssets";
+import { filterAvailableProjectAssets, getAvailableProjectAssets, getThemePackAssets, localizeProjectAsset } from "../data/localAssets";
 
 export const buildingTypes: Record<string, BuildingType> = Object.fromEntries(
   (buildingTypesJson as BuildingType[]).map((bt) => [bt.type, bt])
@@ -261,8 +261,6 @@ export const BUILT_IN_THEME_PACKS: ThemePackDefinition[] = [
     summary: "长安御街地图与宫阙、书院、塔楼、工坊建筑外观。",
     previewUrl: "/scene-themes/changan-city.png",
     creatorName: "长安造景社",
-    downloadCount: 1286,
-    likeCount: 342,
     builtIn: true,
     mapSurrounding: "changan-city",
     buildingSkins: {
@@ -285,8 +283,6 @@ export const BUILT_IN_THEME_PACKS: ThemePackDefinition[] = [
     summary: "云海观星台地图与水晶、星象、天空学院建筑外观。",
     previewUrl: "/scene-themes/sky-observatory.png",
     creatorName: "星穹工坊",
-    downloadCount: 864,
-    likeCount: 219,
     builtIn: true,
     mapSurrounding: "sky-observatory",
     buildingSkins: {
@@ -306,13 +302,12 @@ export const BUILT_IN_THEME_PACKS: ThemePackDefinition[] = [
 function normalizeInstalledThemePacks(
   installedThemePacks: ThemePackDefinition[] | undefined
 ): ThemePackDefinition[] {
-  const installed = installedThemePacks ?? [];
-  const builtInIds = new Set(BUILT_IN_THEME_PACKS.map((pack) => pack.id));
-  const builtIns = BUILT_IN_THEME_PACKS.map((pack) => {
-    const saved = installed.find((item) => item.id === pack.id);
-    return saved?.installedAt ? { ...pack, installedAt: saved.installedAt } : pack;
+  const officialIds = new Set(BUILT_IN_THEME_PACKS.map((pack) => pack.id));
+  const installed = (installedThemePacks ?? []).filter((pack) => pack.installedAt || !officialIds.has(pack.id));
+  return installed.map((pack) => {
+    const official = BUILT_IN_THEME_PACKS.find((item) => item.id === pack.id);
+    return official ? { ...official, ...pack, builtIn: true } : pack;
   });
-  return [...builtIns, ...installed.filter((pack) => !builtInIds.has(pack.id))];
 }
 
 function defaultLayout(): CityLayout {
@@ -3417,7 +3412,7 @@ export const useCityStore = create<CityState>((set, get) => ({
         { ...pack, installedAt: pack.installedAt ?? new Date().toISOString() },
         ...s.installedThemePacks.filter((item) => item.id !== pack.id),
       ],
-      customAssets: mergeCustomAssets(s.customAssets, getProjectAssetsForThemePack(pack.id)),
+      customAssets: mergeCustomAssets(s.customAssets, getThemePackAssets(pack)),
     })),
   save: async () => {
     set({ saveStatus: "saving" });
